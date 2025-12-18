@@ -115,19 +115,35 @@ export class GameEngine {
 
   /**
    * Add a player to the game
+   * Supports mid-game joining: new player is folded for current hand, participates next hand
    */
   addPlayer(player: Player): boolean {
     if (this.state.players.length >= this.settings.maxPlayers) {
       return false;
     }
-    if (this.state.phase !== "waiting") {
-      return false;
-    }
     if (this.state.players.find((p) => p.id === player.id)) {
       return false;
     }
+
+    // If game is in progress, mark as mid-game join with folded state
+    const isGameInProgress = this.state.phase !== "waiting";
+    if (isGameInProgress) {
+      player.folded = true;
+      player.joinedMidGame = true;
+      player.cards = [];
+      player.bet = 0;
+      player.totalBet = 0;
+      player.isActive = false;
+      player.isTurn = false;
+    }
+
     this.state.players.push(player);
-    this.state.pots[0]!.eligiblePlayers.push(player.id);
+
+    // Only add to pot eligibility if game hasn't started
+    if (!isGameInProgress) {
+      this.state.pots[0]!.eligiblePlayers.push(player.id);
+    }
+
     return true;
   }
 
@@ -172,6 +188,7 @@ export class GameEngine {
       player.isTurn = false;
       player.isDealer = false;
       player.isSmallBlind = false;
+      player.joinedMidGame = false; // Reset mid-game join flag for new hand
       player.isBigBlind = false;
       player.hasActedThisRound = false;
     }

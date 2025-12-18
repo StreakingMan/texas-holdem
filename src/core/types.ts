@@ -78,6 +78,7 @@ export interface Player {
   seatIndex: number;
   isConnected: boolean;
   hasActedThisRound: boolean;
+  joinedMidGame?: boolean; // 中途加入标记，下一局开始时重置
 }
 
 // Pot information

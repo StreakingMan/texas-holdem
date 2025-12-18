@@ -188,6 +188,8 @@ onMounted(() => {
   // Handle player join (host only)
   peer.onMessage('player-join', (message, senderId) => {
     if (isHost) {
+      const isGameInProgress = game.gameState.value?.phase && game.gameState.value.phase !== 'waiting'
+      
       game.handleMessage(message, senderId)
       
       // Send current room state to new player
@@ -207,7 +209,11 @@ onMounted(() => {
       }
 
       const payload = message.payload as { player: { name: string } }
-      chat.addSystemMessage(`${payload.player.name} 加入了房间`)
+      if (isGameInProgress) {
+        chat.addSystemMessage(`${payload.player.name} 中途加入房间，将在下一局参与游戏`)
+      } else {
+        chat.addSystemMessage(`${payload.player.name} 加入了房间`)
+      }
     }
   })
 

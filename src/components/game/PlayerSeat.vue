@@ -397,9 +397,17 @@ const statusClass = computed(() => {
           </div>
         </div>
 
+        <!-- Mid-game join indicator (takes priority over folded) -->
+        <div 
+          v-if="player.joinedMidGame"
+          class="absolute inset-0 bg-blue-900/70 rounded-xl flex items-center justify-center"
+        >
+          <span class="text-blue-300 text-sm font-medium">等待下一局</span>
+        </div>
+
         <!-- Folded indicator -->
         <div 
-          v-if="player.folded"
+          v-else-if="player.folded"
           class="absolute inset-0 bg-gray-900/70 rounded-xl flex items-center justify-center"
         >
           <span class="text-gray-400 text-sm font-medium">已弃牌</span>
