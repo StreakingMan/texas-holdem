@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import type { ActionRecord, GamePhase, SystemRecordType } from '@/stores/game-store'
-import { History, Sparkles, CreditCard, Trophy, Play, Layers, Gift } from 'lucide-vue-next'
+import { History, Sparkles, CreditCard, Trophy, Play, Layers, Gift, Coins } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
 
 const props = defineProps<{
@@ -49,7 +49,8 @@ const systemTypeConfig: Record<SystemRecordType, { icon: string; bgClass: string
   'showdown': { icon: 'sparkles', bgClass: 'bg-pink-500/10', borderClass: 'border-l-pink-500' },
   'winner': { icon: 'trophy', bgClass: 'bg-yellow-500/10', borderClass: 'border-l-yellow-500' },
   'hand-end': { icon: 'play', bgClass: 'bg-gray-500/10', borderClass: 'border-l-gray-500' },
-  'tip': { icon: 'gift', bgClass: 'bg-pink-500/10', borderClass: 'border-l-pink-500' }
+  'tip': { icon: 'gift', bgClass: 'bg-pink-500/10', borderClass: 'border-l-pink-500' },
+  'chips-added': { icon: 'coins', bgClass: 'bg-emerald-500/10', borderClass: 'border-l-emerald-500' }
 }
 
 function getActionName(action: string): string {
@@ -140,6 +141,7 @@ function formatTime(timestamp: number): string {
               <Sparkles v-else-if="record.systemType === 'showdown'" class="w-4 h-4 text-pink-400" />
               <Trophy v-else-if="record.systemType === 'winner'" class="w-4 h-4 text-yellow-400" />
               <Gift v-else-if="record.systemType === 'tip'" class="w-4 h-4 text-pink-400" />
+              <Coins v-else-if="record.systemType === 'chips-added'" class="w-4 h-4 text-emerald-400" />
               <History v-else class="w-4 h-4 text-gray-400" />
             </div>
             

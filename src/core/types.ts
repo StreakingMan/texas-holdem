@@ -145,6 +145,7 @@ export type MessageType =
   | "start-game"
   | "room-state"
   | "tip-player"
+  | "add-chips"
   | "error"
   | "ping"
   | "pong";
@@ -196,5 +197,10 @@ export interface TipPayload {
   toPlayerId: string;
   toPlayerName: string;
   toPlayerAvatar?: string;
+  amount: number;
+}
+
+// Add chips payload
+export interface AddChipsPayload {
   amount: number;
 }

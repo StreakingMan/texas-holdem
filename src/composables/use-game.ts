@@ -348,6 +348,24 @@ export function useGame(options: UseGameOptions) {
   }
 
   /**
+   * Add chips to all players (host only)
+   */
+  function addChipsToAll(amount: number): void {
+    if (!isHost || !engine.value) {
+      return;
+    }
+
+    engine.value.addChipsToAll(amount);
+    // Update both game state and room state (for settings)
+    const newState = engine.value.getState();
+    updateState(newState);
+    if (roomState.value) {
+      roomState.value.settings.startingChips =
+        engine.value.getSettings().startingChips;
+    }
+  }
+
+  /**
    * Get current game phase in Chinese
    */
   const phaseText = computed(() => {
@@ -446,5 +464,6 @@ export function useGame(options: UseGameOptions) {
     handleMessage,
     findAvailableSeat,
     tipPlayer,
+    addChipsToAll,
   };
 }

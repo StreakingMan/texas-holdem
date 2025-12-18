@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -9,14 +9,16 @@
   --color-casino-red: #c41e3a;
   --color-felt: #1a472a;
   --color-felt-light: #2d6a4f;
-  
+
   /* Fonts */
   --font-display: "Playfair Display", Georgia, serif;
   --font-body: "Inter", system-ui, sans-serif;
 }
 
 /* Base styles */
-html, body, #app {
+html,
+body,
+#app {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -26,8 +28,17 @@ html, body, #app {
 
 body {
   font-family: var(--font-body);
-  background: linear-gradient(135deg, var(--color-casino-dark) 0%, #1a2820 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-casino-dark) 0%,
+    #1a2820 100%
+  );
   color: white;
+}
+
+/* Button cursor */
+button:not(:disabled) {
+  cursor: pointer;
 }
 
 /* Custom scrollbar */
@@ -65,13 +76,13 @@ body {
 
 /* Card flip animation */
 @keyframes card-flip {
-  0% { 
+  0% {
     transform: rotateY(0deg) scale(1);
   }
   50% {
     transform: rotateY(90deg) scale(1.1);
   }
-  100% { 
+  100% {
     transform: rotateY(180deg) scale(1);
   }
 }
@@ -100,11 +111,12 @@ body {
 
 /* Chip bounce animation */
 @keyframes chip-bounce {
-  0%, 100% { 
-    transform: translateY(0); 
+  0%,
+  100% {
+    transform: translateY(0);
   }
-  50% { 
-    transform: translateY(-10px); 
+  50% {
+    transform: translateY(-10px);
   }
 }
 
@@ -125,17 +137,20 @@ body {
 
 /* Glow pulse effect */
 @keyframes glow-pulse {
-  0%, 100% { 
-    box-shadow: 0 0 5px var(--color-casino-gold); 
+  0%,
+  100% {
+    box-shadow: 0 0 5px var(--color-casino-gold);
   }
-  50% { 
-    box-shadow: 0 0 20px var(--color-casino-gold), 0 0 40px var(--color-casino-gold); 
+  50% {
+    box-shadow: 0 0 20px var(--color-casino-gold),
+      0 0 40px var(--color-casino-gold);
   }
 }
 
 /* Winner celebration */
 @keyframes winner-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
     transform: scale(1);
   }
@@ -222,14 +237,29 @@ body {
 
 /* Shake animation for invalid action */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
 }
 
 /* Turn indicator pulse */
 @keyframes turn-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
   }
   50% {
@@ -300,22 +330,36 @@ body {
 }
 
 /* Animation delays */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-400 {
+  animation-delay: 400ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
 
 /* ===== FELT TEXTURE ===== */
 
 .felt-texture {
-  background: 
-    radial-gradient(ellipse at center, var(--color-felt-light) 0%, var(--color-felt) 50%, var(--color-casino-green) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    var(--color-felt-light) 0%,
+    var(--color-felt) 50%,
+    var(--color-casino-green) 100%
+  );
   position: relative;
 }
 
 .felt-texture::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
@@ -326,7 +370,7 @@ body {
 
 /* Table inner shadow */
 .felt-texture::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.3);
@@ -343,7 +387,7 @@ body {
 }
 
 .shiny-border::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -50%;
   background: conic-gradient(
@@ -370,8 +414,6 @@ body {
 
 /* Neon text effect */
 .neon-text {
-  text-shadow: 
-    0 0 5px currentColor,
-    0 0 10px currentColor,
+  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor,
     0 0 20px currentColor;
 }

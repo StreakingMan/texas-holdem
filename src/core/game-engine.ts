@@ -89,6 +89,13 @@ export class GameEngine {
   }
 
   /**
+   * Get current game settings
+   */
+  getSettings(): GameSettings {
+    return { ...this.settings };
+  }
+
+  /**
    * Get state for a specific player (hides other players' cards)
    */
   getStateForPlayer(playerId: string): GameState {
@@ -826,5 +833,23 @@ export class GameEngine {
     toPlayer.chips += amount;
 
     return true;
+  }
+
+  /**
+   * Add chips to all connected players and update starting chips setting
+   * @param amount - The amount of chips to add to each player
+   */
+  addChipsToAll(amount: number): void {
+    if (amount <= 0) return;
+
+    // Add chips to all connected players
+    for (const player of this.state.players) {
+      if (player.isConnected) {
+        player.chips += amount;
+      }
+    }
+
+    // Update starting chips setting
+    this.settings.startingChips += amount;
   }
 }

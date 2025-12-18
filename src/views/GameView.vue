@@ -13,7 +13,7 @@ import ChatBox from '@/components/chat/ChatBox.vue'
 import LobbyPanel from '@/components/lobby/LobbyPanel.vue'
 import HelpModal from '@/components/game/HelpModal.vue'
 import type { GameState, RoomState, PlayerActionPayload, ChatMessage, Card, GamePhase, TipPayload } from '@/core/types'
-import { Copy, Check, LogOut, Play, Users, TrendingUp, Layers } from 'lucide-vue-next'
+import { Copy, Check, LogOut, Play, Users, TrendingUp, Layers, Coins, Plus } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,6 +29,39 @@ const isConnecting = ref(true)
 // Help modal state
 const showHelpModal = ref(false)
 const helpModalType = ref<'hand-rankings' | 'win-rate'>('hand-rankings')
+
+// Add chips popover state
+const showAddChipsPopover = ref(false)
+const addChipsPresets = [500, 1000, 2000]
+
+function toggleAddChipsPopover() {
+  showAddChipsPopover.value = !showAddChipsPopover.value
+}
+
+function addChipsToAll(amount: number) {
+  if (!isHost || amount <= 0) return
+  
+  game.addChipsToAll(amount)
+  
+  // Add system record
+  gameStore.addSystemRecord(
+    'chips-added',
+    `💰 房主为全员增加 $${amount.toLocaleString()} 筹码`
+  )
+  
+  // Broadcast updated states
+  peer.broadcast({
+    type: 'game-state',
+    payload: game.gameState.value
+  })
+  peer.broadcast({
+    type: 'room-state',
+    payload: game.roomState.value
+  })
+  
+  // Close popover
+  showAddChipsPopover.value = false
+}
 
 // Sidebar resize state
 const historyPanelHeight = ref(40) // percentage
@@ -713,45 +746,92 @@ watch(
 <template>
   <div class="h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-emerald-950 to-gray-900">
     <!-- Top bar -->
-    <header class="flex-shrink-0 h-14 bg-gray-900/80 backdrop-blur border-b border-gray-700/50 flex items-center justify-between px-4">
-      <div class="flex items-center gap-4">
-        <h1 class="text-lg font-semibold text-white" style="font-family: var(--font-display)">
-          德州扑克
+    <header class="shrink-0 h-14 bg-gray-900/80 backdrop-blur border-b border-gray-700/50 flex items-center justify-between px-4 overflow-visible z-20">
+      <div class="flex items-center gap-3 overflow-visible">
+        <!-- Logo -->
+        <h1 class="text-xl font-semibold text-amber-400 hidden sm:flex items-center italic tracking-wide" style="font-family: var(--font-display)">
+          Texas Hold'em
         </h1>
-        <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg">
-          <span class="text-gray-400 text-sm">房间号:</span>
-          <span class="text-amber-400 font-mono font-bold tracking-wider">{{ roomId }}</span>
-          <button 
-            @click="copyRoomId"
-            class="p-1 hover:bg-gray-700 rounded transition-colors"
-            :title="copied ? '已复制' : '复制房间号'"
-          >
-            <Check v-if="copied" class="w-4 h-4 text-emerald-400" />
-            <Copy v-else class="w-4 h-4 text-gray-400" />
-          </button>
-        </div>
-        <div class="flex items-center gap-1 text-gray-400 text-sm">
-          <Users class="w-4 h-4" />
-          <span>{{ gameStore.players.length }}/9</span>
+        
+        <!-- Room info card -->
+        <div class="flex items-center gap-3 px-3 py-1.5 bg-gray-800/80 rounded-lg">
+          <!-- Room ID -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500 text-xs">房间</span>
+            <span class="text-amber-400 font-mono font-bold text-sm">{{ roomId }}</span>
+            <button 
+              @click="copyRoomId"
+              class="p-0.5 hover:bg-gray-700 rounded transition-colors"
+              :title="copied ? '已复制' : '复制'"
+            >
+              <Check v-if="copied" class="w-3.5 h-3.5 text-emerald-400" />
+              <Copy v-else class="w-3.5 h-3.5 text-gray-400" />
+            </button>
+          </div>
+          
+          <div class="w-px h-4 bg-gray-700"></div>
+          
+          <!-- Players count -->
+          <div class="flex items-center gap-1 text-gray-400 text-sm">
+            <Users class="w-3.5 h-3.5" />
+            <span>{{ gameStore.players.length }}/9</span>
+          </div>
+          
+          <div class="w-px h-4 bg-gray-700"></div>
+          
+          <!-- Starting chips -->
+          <div class="flex items-center gap-1.5 relative">
+            <Coins class="w-3.5 h-3.5 text-emerald-400" />
+            <span class="text-emerald-400 text-sm font-medium">${{ (gameStore.settings?.startingChips ?? 1000).toLocaleString() }}</span>
+            
+            <!-- Add chips button (host only) -->
+            <button
+              v-if="isHost"
+              @click="toggleAddChipsPopover"
+              class="p-0.5 hover:bg-emerald-500/20 text-emerald-400 rounded transition-colors ml-0.5"
+              title="增发筹码"
+            >
+              <Plus class="w-3.5 h-3.5" />
+            </button>
+            
+            <!-- Add chips popover -->
+            <Transition name="fade">
+              <div
+                v-if="showAddChipsPopover"
+                class="absolute top-full left-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg p-2.5 shadow-xl z-50 min-w-[120px]"
+                @click.stop
+              >
+                <p class="text-gray-500 text-xs mb-2">全员增发</p>
+                <div class="flex flex-col gap-1">
+                  <button
+                    v-for="amount in addChipsPresets"
+                    :key="amount"
+                    @click="addChipsToAll(amount)"
+                    class="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-sm rounded transition-colors text-left"
+                  >
+                    +${{ amount.toLocaleString() }}
+                  </button>
+                </div>
+              </div>
+            </Transition>
+          </div>
         </div>
         
         <!-- Help buttons -->
-        <div class="flex items-center gap-1 ml-2">
+        <div class="flex items-center gap-1">
           <button
             @click="openHelpModal('win-rate')"
-            class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-sm rounded-lg transition-colors border border-amber-500/30"
-            title="起手牌胜率"
+            class="p-1.5 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors"
+            title="起手胜率"
           >
             <TrendingUp class="w-4 h-4" />
-            <span class="hidden sm:inline">起手胜率</span>
           </button>
           <button
             @click="openHelpModal('hand-rankings')"
-            class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-sm rounded-lg transition-colors border border-purple-500/30"
-            title="牌型大小排名"
+            class="p-1.5 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors"
+            title="牌型大小"
           >
             <Layers class="w-4 h-4" />
-            <span class="hidden sm:inline">牌型大小</span>
           </button>
         </div>
       </div>
