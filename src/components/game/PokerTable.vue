@@ -162,6 +162,8 @@ const flyingTips = computed(() => {
     const fromPos = seatPositions[fromIndex]
     const toPos = seatPositions[toIndex]
     
+    if (!fromPos || !toPos) return null
+    
     return {
       ...effect,
       fromX: fromPos.x,
@@ -169,7 +171,7 @@ const flyingTips = computed(() => {
       toX: toPos.x,
       toY: toPos.y,
     }
-  }).filter(Boolean)
+  }).filter((tip): tip is NonNullable<typeof tip> => tip !== null)
 })
 </script>
 
@@ -256,7 +258,7 @@ const flyingTips = computed(() => {
             <!-- Show actual card if available -->
             <Card
               v-if="communityCards[i - 1]"
-              :card="communityCards[i - 1]"
+              :card="communityCards[i - 1] ?? null"
               size="md"
               :animation-delay="(i - 1) * 150"
               class="deal-animation"

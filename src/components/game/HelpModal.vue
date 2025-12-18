@@ -42,15 +42,6 @@ const handRankings = [
   { rank: 10, name: '高牌', desc: '无任何牌型', example: '♠A ♥J ♦8 ♣5 ♠2', prob: 50.1, rarity: 1, color: 'from-gray-400 to-slate-500' },
 ]
 
-// Format probability for display (percentage)
-function formatProb(prob: number): string {
-  if (prob < 0.001) return prob.toFixed(5) + '%'
-  if (prob < 0.01) return prob.toFixed(4) + '%'
-  if (prob < 0.1) return prob.toFixed(3) + '%'
-  if (prob < 1) return prob.toFixed(2) + '%'
-  return prob.toFixed(1) + '%'
-}
-
 // Format probability as Chinese text (for no-game state)
 function formatProbText(prob: number): string {
   if (prob < 0.01) {
@@ -67,12 +58,6 @@ function formatProbText(prob: number): string {
   } else {
     return `${prob.toFixed(0)}%`
   }
-}
-
-// Get pie chart color based on probability value
-function getPieColor(rarity: number): string {
-  const colors = ['#6b7280', '#6b7280', '#22d3ee', '#a855f7', '#f59e0b', '#fbbf24']
-  return colors[rarity] || '#6b7280'
 }
 
 // Get color based on live probability
@@ -98,7 +83,8 @@ const liveHandProbabilities = computed(() => {
   const cardsTocome = communityCount === 0 ? 5 : communityCount === 3 ? 2 : communityCount === 4 ? 1 : 0
   
   // Analyze hole cards for preflop probabilities
-  const [card1, card2] = props.playerCards
+  const card1 = props.playerCards[0]!
+  const card2 = props.playerCards[1]!
   const isPair = card1.rank === card2.rank
   const isSuited = card1.suit === card2.suit
   const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']

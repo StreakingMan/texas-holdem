@@ -32,25 +32,18 @@ const phaseNames: Record<string, string> = {
   'ended': '本局结束'
 }
 
-// Get player name by ID
-function getPlayerName(playerId: string): string {
-  const player = props.players.find(p => p.id === playerId)
-  return player?.name || '玩家'
-}
-
 // Format action text
 function formatAction(action: PlayerAction, amount?: number): string {
-  const actionTexts: Record<PlayerAction, string> = {
+  const actionTexts: Record<string, string> = {
     'fold': '弃牌',
     'check': '过牌',
     'call': '跟注',
     'raise': '加注',
     'all-in': '全下',
-    'small-blind': '小盲',
-    'big-blind': '大盲'
+    'bet': '下注'
   }
   const text = actionTexts[action] || action
-  if (amount && ['call', 'raise', 'all-in', 'small-blind', 'big-blind'].includes(action)) {
+  if (amount && ['call', 'raise', 'all-in', 'bet'].includes(action)) {
     return `${text} $${amount}`
   }
   return text
@@ -67,6 +60,7 @@ const thinkingPlayer = computed(() => {
 const winnerInfo = computed(() => {
   if (!props.winners || props.winners.length === 0) return null
   const winner = props.winners[0]
+  if (!winner) return null
   const player = props.players.find(p => p.id === winner.playerId)
   return {
     name: player?.name || '玩家',
