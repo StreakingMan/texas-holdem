@@ -699,6 +699,16 @@ export class GameEngine {
         },
       ];
     } else {
+      // Multiple players - need to showdown
+      // First, deal remaining community cards if not enough
+      while (this.state.communityCards.length < 5) {
+        this.deck.burn();
+        const card = this.deck.deal();
+        if (card) {
+          this.state.communityCards.push(card);
+        }
+      }
+
       // Showdown - determine winner(s)
       this.state.phase = "showdown";
 
