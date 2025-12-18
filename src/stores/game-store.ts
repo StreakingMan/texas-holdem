@@ -9,18 +9,26 @@ import type {
 } from "@/core/types";
 
 // Game phase names
-export type GamePhase = "waiting" | "preflop" | "flop" | "turn" | "river" | "showdown" | "ended";
+export type GamePhase =
+  | "waiting"
+  | "preflop"
+  | "flop"
+  | "turn"
+  | "river"
+  | "showdown"
+  | "ended";
 
 // System record types
-export type SystemRecordType = 
-  | "hand-start"      // 新一局开始
-  | "blinds-posted"   // 盲注下注
-  | "phase-flop"      // 翻牌
-  | "phase-turn"      // 转牌
-  | "phase-river"     // 河牌
-  | "showdown"        // 摊牌
-  | "winner"          // 赢家公布
-  | "hand-end";       // 一局结束
+export type SystemRecordType =
+  | "hand-start" // 新一局开始
+  | "blinds-posted" // 盲注下注
+  | "phase-flop" // 翻牌
+  | "phase-turn" // 转牌
+  | "phase-river" // 河牌
+  | "showdown" // 摊牌
+  | "winner" // 赢家公布
+  | "hand-end" // 一局结束
+  | "tip"; // 打赏
 
 // Action history record type
 export interface ActionRecord {
@@ -38,7 +46,11 @@ export interface ActionRecord {
   isSystem?: boolean;
   systemType?: SystemRecordType;
   systemMessage?: string;
-  communityCards?: string[];  // 用于显示公共牌
+  communityCards?: string[]; // 用于显示公共牌
+  // Tip record fields
+  tipToPlayerId?: string;
+  tipToPlayerName?: string;
+  tipToPlayerAvatar?: string;
 }
 
 export const useGameStore = defineStore("game", () => {
@@ -149,23 +161,34 @@ export const useGameStore = defineStore("game", () => {
   function addSystemRecord(
     systemType: SystemRecordType,
     message: string,
-    phase: GamePhase,
-    potAfter?: number,
-    communityCards?: string[]
+    phase?: GamePhase,
+    communityCards?: string[],
+    tipOptions?: {
+      fromPlayerId?: string;
+      fromPlayerName?: string;
+      fromPlayerAvatar?: string;
+      tipToPlayerId?: string;
+      tipToPlayerName?: string;
+      tipToPlayerAvatar?: string;
+    }
   ): void {
     actionHistory.value.push({
       id: `system-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      playerId: "system",
-      playerName: "系统",
+      playerId: tipOptions?.fromPlayerId || "system",
+      playerName: tipOptions?.fromPlayerName || "系统",
+      playerAvatar: tipOptions?.fromPlayerAvatar,
       action: "check" as PlayerAction, // placeholder, not used for system
       timestamp: Date.now(),
-      phase,
-      potAfter: potAfter ?? 0,
+      phase: phase || "waiting",
+      potAfter: 0,
       playerChipsAfter: 0,
       isSystem: true,
       systemType,
       systemMessage: message,
       communityCards,
+      tipToPlayerId: tipOptions?.tipToPlayerId,
+      tipToPlayerName: tipOptions?.tipToPlayerName,
+      tipToPlayerAvatar: tipOptions?.tipToPlayerAvatar,
     });
     // Keep last 100 records
     if (actionHistory.value.length > 100) {

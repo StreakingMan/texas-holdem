@@ -206,6 +206,37 @@ export class GameEngine {
   }
 
   /**
+   * Get the reason why a new hand cannot be started
+   * Returns null if a new hand can be started
+   */
+  getStartHandError(): string | null {
+    const connectedPlayers = this.state.players.filter((p) => p.isConnected);
+    const playersWithChips = connectedPlayers.filter((p) => p.chips > 0);
+
+    if (connectedPlayers.length < 2) {
+      return "等待更多玩家加入";
+    }
+
+    if (playersWithChips.length < 2) {
+      // Find the winner (the one with chips)
+      const winner = playersWithChips[0];
+      if (winner) {
+        return `🏆 ${winner.name} 赢得了所有筹码！游戏结束`;
+      }
+      return "所有玩家筹码耗尽";
+    }
+
+    // Check for eliminated players
+    const eliminatedPlayers = connectedPlayers.filter((p) => p.chips <= 0);
+    if (eliminatedPlayers.length > 0) {
+      const names = eliminatedPlayers.map((p) => p.name).join("、");
+      return `${names} 已出局`;
+    }
+
+    return null;
+  }
+
+  /**
    * Post small and big blinds
    */
   private postBlinds(): void {
@@ -762,5 +793,38 @@ export class GameEngine {
       (p) => p.chips > 0 || !p.isConnected
     );
     this.state.phase = "waiting";
+  }
+
+  /**
+   * Process a tip from one player to another
+   * @param fromId - The ID of the player giving the tip
+   * @param toId - The ID of the player receiving the tip
+   * @param amount - The amount to tip
+   * @returns true if the tip was successful, false otherwise
+   */
+  tipPlayer(fromId: string, toId: string, amount: number): boolean {
+    // Validate amount
+    if (amount <= 0) {
+      return false;
+    }
+
+    // Find both players
+    const fromPlayer = this.state.players.find((p) => p.id === fromId);
+    const toPlayer = this.state.players.find((p) => p.id === toId);
+
+    if (!fromPlayer || !toPlayer) {
+      return false;
+    }
+
+    // Check if fromPlayer has enough chips
+    if (fromPlayer.chips < amount) {
+      return false;
+    }
+
+    // Transfer chips
+    fromPlayer.chips -= amount;
+    toPlayer.chips += amount;
+
+    return true;
   }
 }

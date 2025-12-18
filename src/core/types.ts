@@ -144,6 +144,7 @@ export type MessageType =
   | "chat-message"
   | "start-game"
   | "room-state"
+  | "tip-player"
   | "error"
   | "ping"
   | "pong";
@@ -185,4 +186,15 @@ export interface PlayerActionPayload {
 export interface ErrorPayload {
   code: string;
   message: string;
+}
+
+// Tip payload
+export interface TipPayload {
+  fromPlayerId: string;
+  fromPlayerName: string;
+  fromPlayerAvatar?: string;
+  toPlayerId: string;
+  toPlayerName: string;
+  toPlayerAvatar?: string;
+  amount: number;
 }

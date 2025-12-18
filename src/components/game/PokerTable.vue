@@ -22,6 +22,20 @@ const props = defineProps<{
   lastAction?: LastActionInfo | null
 }>()
 
+const emit = defineEmits<{
+  tip: [playerId: string, amount: number]
+}>()
+
+// Local player chips for tip validation
+const localPlayerChips = computed(() => {
+  const localPlayer = props.players.find(p => p.id === props.localPlayerId)
+  return localPlayer?.chips ?? 0
+})
+
+function handleTip(playerId: string, amount: number) {
+  emit('tip', playerId, amount)
+}
+
 // Calculate seat positions around the table
 // Layout: 4 corners + bottom center (self) + left/right middle + top 2
 const seatPositions = [
@@ -109,6 +123,8 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
         :win-amount="player ? getWinAmount(player.id) : undefined"
         :latest-message="player ? getPlayerBubble(player.id) : null"
         :last-action="player ? getPlayerLastAction(player.id) : null"
+        :local-player-chips="localPlayerChips"
+        @tip="handleTip"
       />
 
       <!-- Center area (pot + community cards) -->

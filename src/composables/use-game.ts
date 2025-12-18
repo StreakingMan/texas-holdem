@@ -323,7 +323,28 @@ export function useGame(options: UseGameOptions) {
       case "start-game":
         // Game started notification (handled by game-state update)
         break;
+
+      case "tip-player":
+        // Tip is handled in GameView.vue for broadcast coordination
+        break;
     }
+  }
+
+  /**
+   * Process a tip from one player to another (host only)
+   */
+  function tipPlayer(fromId: string, toId: string, amount: number): boolean {
+    if (!isHost || !engine.value) {
+      return false;
+    }
+
+    const success = engine.value.tipPlayer(fromId, toId, amount);
+    if (success) {
+      // Get updated state
+      const newState = engine.value.getState();
+      updateState(newState);
+    }
+    return success;
   }
 
   /**
@@ -359,6 +380,33 @@ export function useGame(options: UseGameOptions) {
     );
   });
 
+  /**
+   * Get the reason why a new hand cannot be started (for next hand button)
+   */
+  const startHandError = computed(() => {
+    if (isHost && engine.value) {
+      return engine.value.getStartHandError();
+    }
+    // Non-host: calculate from gameState
+    if (!gameState.value) return null;
+    const connectedPlayers = gameState.value.players.filter(
+      (p) => p.isConnected
+    );
+    const playersWithChips = connectedPlayers.filter((p) => p.chips > 0);
+
+    if (connectedPlayers.length < 2) {
+      return "等待更多玩家加入";
+    }
+    if (playersWithChips.length < 2) {
+      const winner = playersWithChips[0];
+      if (winner) {
+        return `🏆 ${winner.name} 赢得了所有筹码！游戏结束`;
+      }
+      return "所有玩家筹码耗尽";
+    }
+    return null;
+  });
+
   // Watch for state changes and notify
   watch(
     gameState,
@@ -384,6 +432,7 @@ export function useGame(options: UseGameOptions) {
     phaseText,
     totalPot,
     canStartGame,
+    startHandError,
 
     // Methods
     initGame,
@@ -396,5 +445,6 @@ export function useGame(options: UseGameOptions) {
     updateRoomState,
     handleMessage,
     findAvailableSeat,
+    tipPlayer,
   };
 }

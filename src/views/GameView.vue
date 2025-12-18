@@ -12,7 +12,7 @@ import ActionHistory from '@/components/game/ActionHistory.vue'
 import ChatBox from '@/components/chat/ChatBox.vue'
 import LobbyPanel from '@/components/lobby/LobbyPanel.vue'
 import HelpModal from '@/components/game/HelpModal.vue'
-import type { GameState, RoomState, PlayerActionPayload, ChatMessage, Card, GamePhase } from '@/core/types'
+import type { GameState, RoomState, PlayerActionPayload, ChatMessage, Card, GamePhase, TipPayload } from '@/core/types'
 import { Copy, Check, LogOut, Play, Users, TrendingUp, Layers } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -250,6 +250,66 @@ onMounted(() => {
   peer.onMessage('start-game', () => {
     // Game will be updated via game-state message
   })
+
+  // Handle tip message
+  peer.onMessage('tip-player', (message) => {
+    const tipPayload = message.payload as TipPayload
+    
+    if (isHost) {
+      // Host processes the tip
+      const success = game.tipPlayer(
+        tipPayload.fromPlayerId,
+        tipPayload.toPlayerId,
+        tipPayload.amount
+      )
+      
+      if (success) {
+        // Add tip record to action history
+        gameStore.addSystemRecord(
+          'tip',
+          `💰 ${tipPayload.fromPlayerName} 打赏 ${tipPayload.toPlayerName} $${tipPayload.amount}`,
+          undefined,
+          undefined,
+          {
+            fromPlayerId: tipPayload.fromPlayerId,
+            fromPlayerName: tipPayload.fromPlayerName,
+            fromPlayerAvatar: tipPayload.fromPlayerAvatar,
+            tipToPlayerId: tipPayload.toPlayerId,
+            tipToPlayerName: tipPayload.toPlayerName,
+            tipToPlayerAvatar: tipPayload.toPlayerAvatar,
+          }
+        )
+        
+        // Broadcast updated state and tip record
+        peer.broadcast({
+          type: 'game-state',
+          payload: game.gameState.value
+        })
+        peer.broadcast({
+          type: 'tip-player',
+          payload: { ...tipPayload, processed: true }
+        })
+      }
+    } else {
+      // Non-host: add tip record when receiving processed tip
+      if ((tipPayload as TipPayload & { processed?: boolean }).processed) {
+        gameStore.addSystemRecord(
+          'tip',
+          `💰 ${tipPayload.fromPlayerName} 打赏 ${tipPayload.toPlayerName} $${tipPayload.amount}`,
+          undefined,
+          undefined,
+          {
+            fromPlayerId: tipPayload.fromPlayerId,
+            fromPlayerName: tipPayload.fromPlayerName,
+            fromPlayerAvatar: tipPayload.fromPlayerAvatar,
+            tipToPlayerId: tipPayload.toPlayerId,
+            tipToPlayerName: tipPayload.toPlayerName,
+            tipToPlayerAvatar: tipPayload.toPlayerAvatar,
+          }
+        )
+      }
+    }
+  })
 })
 
 // Cleanup on unmount
@@ -318,6 +378,65 @@ function handleAction(action: string, amount?: number): void {
   }
 }
 
+// Send tip to another player
+function sendTip(toPlayerId: string, amount: number): void {
+  const toPlayer = game.gameState.value?.players.find(p => p.id === toPlayerId)
+  if (!toPlayer) return
+
+  const tipPayload: TipPayload = {
+    fromPlayerId: playerStore.playerId,
+    fromPlayerName: playerStore.playerName,
+    fromPlayerAvatar: playerStore.avatar,
+    toPlayerId,
+    toPlayerName: toPlayer.name,
+    toPlayerAvatar: toPlayer.avatar,
+    amount
+  }
+
+  if (isHost) {
+    // Process tip directly
+    const success = game.tipPlayer(
+      tipPayload.fromPlayerId,
+      tipPayload.toPlayerId,
+      tipPayload.amount
+    )
+    
+    if (success) {
+      // Add tip record
+      gameStore.addSystemRecord(
+        'tip',
+        `💰 ${tipPayload.fromPlayerName} 打赏 ${tipPayload.toPlayerName} $${tipPayload.amount}`,
+        undefined,
+        undefined,
+        {
+          fromPlayerId: tipPayload.fromPlayerId,
+          fromPlayerName: tipPayload.fromPlayerName,
+          fromPlayerAvatar: tipPayload.fromPlayerAvatar,
+          tipToPlayerId: tipPayload.toPlayerId,
+          tipToPlayerName: tipPayload.toPlayerName,
+          tipToPlayerAvatar: tipPayload.toPlayerAvatar,
+        }
+      )
+      
+      // Broadcast updated state and tip notification
+      peer.broadcast({
+        type: 'game-state',
+        payload: game.gameState.value
+      })
+      peer.broadcast({
+        type: 'tip-player',
+        payload: { ...tipPayload, processed: true }
+      })
+    }
+  } else {
+    // Send to host for processing
+    peer.sendToHost({
+      type: 'tip-player',
+      payload: tipPayload
+    })
+  }
+}
+
 // Send chat message
 function sendChatMessage(content: string): void {
   const message = chat.createMessage(content)
@@ -365,6 +484,9 @@ const showNextHandButton = computed(() =>
   isHost && gameStore.phase === 'ended'
 )
 
+// Get the error message for why next hand cannot start
+const nextHandError = computed(() => game.startHandError.value)
+
 // Helper function to format a card for display
 function formatCard(card: Card | null): string {
   if (!card) return '?'
@@ -408,7 +530,6 @@ watch(
     lastPhase = newPhase
     
     const communityCards = gameStore.communityCards.map(c => formatCard(c))
-    const pot = gameStore.totalPot
     
     // Record phase changes
     switch (newPhase) {
@@ -418,8 +539,7 @@ watch(
           gameStore.addSystemRecord(
             'hand-start',
             '🎴 新一局开始，发牌中...',
-            newPhase,
-            0
+            newPhase
           )
           
           // Find small and big blind players
@@ -431,8 +551,7 @@ watch(
             gameStore.addSystemRecord(
               'blinds-posted',
               `💰 ${sbPlayer.name} 下小盲 $${sbAmount}，${bbPlayer.name} 下大盲 $${bbAmount}`,
-              newPhase,
-              pot
+              newPhase
             )
           }
           handStartRecorded = true
@@ -444,7 +563,6 @@ watch(
           'phase-flop',
           '🃏 翻牌 - 发出前3张公共牌',
           newPhase,
-          pot,
           communityCards.slice(0, 3)
         )
         break
@@ -454,7 +572,6 @@ watch(
           'phase-turn',
           '🃏 转牌 - 发出第4张公共牌',
           newPhase,
-          pot,
           communityCards.slice(3, 4)
         )
         break
@@ -464,7 +581,6 @@ watch(
           'phase-river',
           '🃏 河牌 - 发出第5张公共牌',
           newPhase,
-          pot,
           communityCards.slice(4, 5)
         )
         break
@@ -474,7 +590,6 @@ watch(
           'showdown',
           '🎭 摊牌 - 所有玩家亮出底牌',
           newPhase,
-          pot,
           communityCards
         )
         break
@@ -542,9 +657,7 @@ watch(
         const handDesc = winner.hand?.description || getHandRankName(winner.hand?.rank || 'high-card')
         gameStore.addSystemRecord(
           'winner',
-          `🏆 ${player.name} 赢得 $${winner.amount.toLocaleString()}${handDesc ? ` (${handDesc})` : ''}`,
-          'ended',
-          0
+          `🏆 ${player.name} 赢得 $${winner.amount.toLocaleString()}${handDesc ? ` (${handDesc})` : ''}`
         )
       }
     })
@@ -552,9 +665,7 @@ watch(
     // Add hand end record
     gameStore.addSystemRecord(
       'hand-end',
-      '📋 本局结束，等待下一局...',
-      'ended',
-      0
+      '📋 本局结束，等待下一局...'
     )
   },
   { deep: true }
@@ -654,14 +765,28 @@ watch(
           <Play class="w-4 h-4" />
           开始游戏
         </button>
-        <button 
-          v-if="showNextHandButton"
-          @click="nextHand"
-          class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-medium rounded-lg shadow-lg shadow-amber-500/30 transition-all flex items-center gap-2"
-        >
-          <Play class="w-4 h-4" />
-          下一局
-        </button>
+        <!-- Next hand button with error state -->
+        <div v-if="showNextHandButton" class="relative group">
+          <button 
+            @click="nextHand"
+            :disabled="!!nextHandError"
+            class="px-4 py-2 text-white font-medium rounded-lg shadow-lg transition-all flex items-center gap-2"
+            :class="nextHandError 
+              ? 'bg-gray-600 cursor-not-allowed opacity-60' 
+              : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-500/30'"
+          >
+            <Play class="w-4 h-4" />
+            下一局
+          </button>
+          <!-- Error tooltip -->
+          <div 
+            v-if="nextHandError"
+            class="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none"
+          >
+            {{ nextHandError }}
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800"></div>
+          </div>
+        </div>
         <button 
           @click="leaveRoom"
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
@@ -711,6 +836,7 @@ watch(
           :local-player-id="playerStore.playerId"
           :player-bubbles="playerBubbles"
           :last-action="lastActionInfo"
+          @tip="sendTip"
         />
 
         <!-- Lobby overlay -->

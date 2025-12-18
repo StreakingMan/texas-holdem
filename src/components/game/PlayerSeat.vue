@@ -3,7 +3,7 @@ import { computed, ref, watch, onUnmounted } from 'vue'
 import type { Player, PlayerAction } from '@/core/types'
 import Card from './Card.vue'
 import ChipStack from './ChipStack.vue'
-import { Crown, Timer, Wifi, WifiOff } from 'lucide-vue-next'
+import { Crown, Timer, Wifi, WifiOff, Gift, X } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
 
 // Chat bubble message type
@@ -21,6 +21,11 @@ const props = defineProps<{
   winAmount?: number
   latestMessage?: BubbleMessage | null
   lastAction?: PlayerAction | null
+  localPlayerChips?: number
+}>()
+
+const emit = defineEmits<{
+  tip: [playerId: string, amount: number]
 }>()
 
 // Bubble visibility state
@@ -32,6 +37,25 @@ let bubbleTimer: ReturnType<typeof setTimeout> | null = null
 const showRaiseEffect = ref(false)
 const showAllInEffect = ref(false)
 let actionEffectTimer: ReturnType<typeof setTimeout> | null = null
+
+// Tip state
+const showTipPopover = ref(false)
+const customTipAmount = ref(50)
+const tipPresets = [10, 50, 100, 200]
+
+function toggleTipPopover() {
+  showTipPopover.value = !showTipPopover.value
+}
+
+function sendTip(amount: number) {
+  if (props.player && amount > 0 && (props.localPlayerChips ?? 0) >= amount) {
+    emit('tip', props.player.id, amount)
+    showTipPopover.value = false
+  }
+}
+
+// Can afford tip check
+const canAffordTip = (amount: number) => (props.localPlayerChips ?? 0) >= amount
 
 // Watch for new messages
 watch(
@@ -270,6 +294,75 @@ const statusClass = computed(() => {
           <Wifi v-if="player.isConnected" class="w-3 h-3 text-emerald-400" />
           <WifiOff v-else class="w-3 h-3 text-red-400" />
         </div>
+
+        <!-- Tip button (for non-local players) -->
+        <button
+          v-if="!isLocal && player.isConnected"
+          @click.stop="toggleTipPopover"
+          class="absolute -bottom-3 -right-3 w-6 h-6 bg-pink-500 hover:bg-pink-400 text-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
+          title="打赏"
+        >
+          <Gift class="w-3 h-3" />
+        </button>
+
+        <!-- Tip popover -->
+        <Transition name="tip-popover">
+          <div
+            v-if="showTipPopover && !isLocal"
+            class="absolute -right-2 top-full mt-2 bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-xl z-30 min-w-[160px]"
+            @click.stop
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-white text-sm font-medium">💰 打赏</span>
+              <button @click="showTipPopover = false" class="text-gray-400 hover:text-white">
+                <X class="w-4 h-4" />
+              </button>
+            </div>
+            
+            <!-- Preset amounts -->
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <button
+                v-for="amount in tipPresets"
+                :key="amount"
+                @click="sendTip(amount)"
+                :disabled="!canAffordTip(amount)"
+                class="px-2 py-1 rounded text-sm font-medium transition-all"
+                :class="canAffordTip(amount) 
+                  ? 'bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 border border-pink-500/30' 
+                  : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'"
+              >
+                ${{ amount }}
+              </button>
+            </div>
+            
+            <!-- Custom amount -->
+            <div class="flex gap-2">
+              <input
+                v-model.number="customTipAmount"
+                type="number"
+                min="1"
+                :max="localPlayerChips"
+                class="flex-1 bg-gray-700 text-white text-sm px-2 py-1 rounded border border-gray-600 focus:border-pink-500 focus:outline-none w-16"
+                placeholder="金额"
+              />
+              <button
+                @click="sendTip(customTipAmount)"
+                :disabled="!canAffordTip(customTipAmount) || customTipAmount <= 0"
+                class="px-3 py-1 rounded text-sm font-medium transition-all"
+                :class="canAffordTip(customTipAmount) && customTipAmount > 0
+                  ? 'bg-pink-500 text-white hover:bg-pink-400' 
+                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'"
+              >
+                送
+              </button>
+            </div>
+            
+            <!-- Balance hint -->
+            <p class="text-gray-500 text-xs mt-2 text-center">
+              余额: ${{ (localPlayerChips ?? 0).toLocaleString() }}
+            </p>
+          </div>
+        </Transition>
 
         <!-- Player avatar -->
         <div class="flex items-center gap-2">
@@ -620,6 +713,36 @@ const statusClass = computed(() => {
   50% {
     opacity: 1;
     transform: scale(1.1);
+  }
+}
+
+/* ========== TIP POPOVER ========== */
+.tip-popover-enter-active {
+  animation: tip-popover-in 0.2s ease-out;
+}
+.tip-popover-leave-active {
+  animation: tip-popover-out 0.15s ease-in;
+}
+
+@keyframes tip-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tip-popover-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
   }
 }
 </style>
