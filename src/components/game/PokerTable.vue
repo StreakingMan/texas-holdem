@@ -4,11 +4,19 @@ import type { Player, Card as CardType, WinnerInfo, PlayerAction, GamePhase } fr
 import PlayerSeat, { type BubbleMessage } from './PlayerSeat.vue'
 import Card from './Card.vue'
 import PotDisplay, { type LastActionInfo as PotLastActionInfo } from './PotDisplay.vue'
+import { Coins } from 'lucide-vue-next'
 
 export interface LastActionInfo {
   playerId: string
   action: PlayerAction
   amount?: number
+}
+
+export interface TipEffect {
+  fromPlayerId: string
+  toPlayerId: string
+  amount: number
+  timestamp: number
 }
 
 const props = defineProps<{
@@ -22,6 +30,7 @@ const props = defineProps<{
   playerBubbles?: Map<string, BubbleMessage>
   lastAction?: LastActionInfo | null
   isHost?: boolean
+  tipEffects?: TipEffect[]
 }>()
 
 const emit = defineEmits<{
@@ -115,6 +124,53 @@ const potLastAction = computed((): PotLastActionInfo | null => {
     amount: props.lastAction.amount
   }
 })
+
+// Get tip effect for a player (sending or receiving)
+function getPlayerTipEffect(playerId: string): { type: 'sending' | 'receiving', amount: number } | null {
+  if (!props.tipEffects || props.tipEffects.length === 0) return null
+  
+  // Check if this player is sending a tip
+  const sendingEffect = props.tipEffects.find(e => e.fromPlayerId === playerId)
+  if (sendingEffect) {
+    return { type: 'sending', amount: sendingEffect.amount }
+  }
+  
+  // Check if this player is receiving a tip
+  const receivingEffect = props.tipEffects.find(e => e.toPlayerId === playerId)
+  if (receivingEffect) {
+    return { type: 'receiving', amount: receivingEffect.amount }
+  }
+  
+  return null
+}
+
+// Get player display index by ID
+function getPlayerDisplayIndex(playerId: string): number {
+  return orderedPlayers.value.findIndex(p => p?.id === playerId)
+}
+
+// Calculate flying tip animations with positions
+const flyingTips = computed(() => {
+  if (!props.tipEffects || props.tipEffects.length === 0) return []
+  
+  return props.tipEffects.map(effect => {
+    const fromIndex = getPlayerDisplayIndex(effect.fromPlayerId)
+    const toIndex = getPlayerDisplayIndex(effect.toPlayerId)
+    
+    if (fromIndex === -1 || toIndex === -1) return null
+    
+    const fromPos = seatPositions[fromIndex]
+    const toPos = seatPositions[toIndex]
+    
+    return {
+      ...effect,
+      fromX: fromPos.x,
+      fromY: fromPos.y,
+      toX: toPos.x,
+      toY: toPos.y,
+    }
+  }).filter(Boolean)
+})
 </script>
 
 <template>
@@ -141,9 +197,39 @@ const potLastAction = computed((): PotLastActionInfo | null => {
         :local-player-chips="localPlayerChips"
         :community-cards="communityCards"
         :phase="phase"
+        :tip-effect="player ? getPlayerTipEffect(player.id) : null"
         @tip="handleTip"
         @open-hand-rankings="emit('openHandRankings')"
       />
+
+      <!-- Flying tip coins animation -->
+      <TransitionGroup name="tip-fly">
+        <div
+          v-for="(tip, index) in flyingTips"
+          :key="`tip-${tip.fromPlayerId}-${tip.toPlayerId}-${index}`"
+          class="absolute inset-0 pointer-events-none z-[100]"
+          :style="{
+            '--from-x': `${tip.fromX}%`,
+            '--from-y': `${tip.fromY}%`,
+            '--to-x': `${tip.toX}%`,
+            '--to-y': `${tip.toY}%`,
+          }"
+        >
+          <!-- Multiple coins for effect -->
+          <div 
+            v-for="i in 5" 
+            :key="i" 
+            class="flying-coin"
+            :style="{ '--delay': `${i * 80}ms`, '--offset': `${(i - 3) * 8}px` }"
+          >
+            <Coins class="w-6 h-6 text-amber-400 drop-shadow-lg" />
+          </div>
+          <!-- Amount label -->
+          <div class="tip-amount-label">
+            +${{ tip.amount }}
+          </div>
+        </div>
+      </TransitionGroup>
 
       <!-- Center area (pot + community cards) - offset up by 150px -->
       <div 
@@ -207,6 +293,100 @@ const potLastAction = computed((): PotLastActionInfo | null => {
 
 .deal-animation {
   animation: deal 0.4s ease-out backwards;
+}
+
+/* ========== Flying Tip Coins Animation ========== */
+.tip-fly-enter-active,
+.tip-fly-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.tip-fly-enter-from,
+.tip-fly-leave-to {
+  opacity: 0;
+}
+
+.flying-coin {
+  position: absolute;
+  left: var(--from-x);
+  top: var(--from-y);
+  transform: translate(-50%, -50%);
+  animation: fly-to-target 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: var(--delay);
+  opacity: 0;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+@keyframes fly-to-target {
+  0% {
+    left: var(--from-x);
+    top: var(--from-y);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2) rotate(15deg);
+  }
+  50% {
+    /* Arc motion - go up in the middle */
+    left: calc((var(--from-x) + var(--to-x)) / 2);
+    top: calc((var(--from-y) + var(--to-y)) / 2 - 15%);
+    transform: translate(calc(-50% + var(--offset)), -50%) scale(1) rotate(180deg);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2) rotate(345deg);
+  }
+  100% {
+    left: var(--to-x);
+    top: var(--to-y);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8) rotate(360deg);
+  }
+}
+
+.tip-amount-label {
+  position: absolute;
+  left: var(--from-x);
+  top: var(--from-y);
+  transform: translate(-50%, -50%);
+  animation: fly-amount-label 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@keyframes fly-amount-label {
+  0% {
+    left: var(--from-x);
+    top: var(--from-y);
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -120%) scale(1.2);
+  }
+  50% {
+    left: calc((var(--from-x) + var(--to-x)) / 2);
+    top: calc((var(--from-y) + var(--to-y)) / 2 - 20%);
+    transform: translate(-50%, -100%) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    left: var(--to-x);
+    top: var(--to-y);
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(1);
+  }
 }
 </style>
 

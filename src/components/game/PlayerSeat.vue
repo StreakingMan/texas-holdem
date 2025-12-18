@@ -13,6 +13,11 @@ export interface BubbleMessage {
   timestamp: number
 }
 
+export interface TipEffectInfo {
+  type: 'sending' | 'receiving'
+  amount: number
+}
+
 const props = defineProps<{
   player: Player | null
   position: { x: number; y: number }
@@ -25,6 +30,7 @@ const props = defineProps<{
   localPlayerChips?: number
   communityCards?: CardType[]
   phase?: GamePhase
+  tipEffect?: TipEffectInfo | null
 }>()
 
 const emit = defineEmits<{
@@ -45,7 +51,7 @@ let actionEffectTimer: ReturnType<typeof setTimeout> | null = null
 // Tip state
 const showTipPopover = ref(false)
 const customTipAmount = ref(50)
-const tipPresets = [10, 50, 100, 200]
+const tipPresets = [10, 50, 100]
 
 function toggleTipPopover() {
   showTipPopover.value = !showTipPopover.value
@@ -416,7 +422,7 @@ function getTierColor(tier: string): string {
             </div>
             
             <!-- Preset amounts -->
-            <div class="grid grid-cols-2 gap-2 mb-2">
+            <div class="flex gap-2 mb-2">
               <button
                 v-for="amount in tipPresets"
                 :key="amount"
@@ -545,6 +551,41 @@ function getTierColor(tier: string): string {
       >
         +${{ winAmount?.toLocaleString() }}
       </div>
+
+      <!-- Tip sending effect (shows amount badge only, coins fly in PokerTable) -->
+      <Transition name="tip-badge">
+        <div 
+          v-if="tipEffect?.type === 'sending'"
+          class="absolute -top-8 left-1/2 -translate-x-1/2 pointer-events-none z-30"
+        >
+          <div class="bg-red-500/90 text-white px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap shadow-lg shadow-red-500/50">
+            -${{ tipEffect.amount }}
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Tip receiving effect (shows glow + amount + sparkles) -->
+      <Transition name="tip-receive">
+        <div 
+          v-if="tipEffect?.type === 'receiving'"
+          class="absolute inset-0 pointer-events-none z-30"
+        >
+          <!-- Glow ring effect -->
+          <div class="absolute inset-0 rounded-full tip-glow-ring"></div>
+          <!-- Sparkle effect -->
+          <div class="tip-sparkles">
+            <div v-for="i in 8" :key="i" class="tip-sparkle" :style="`--i: ${i}`">✨</div>
+          </div>
+          <!-- Amount badge -->
+          <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500/90 text-white px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap shadow-lg shadow-emerald-500/50 tip-badge-in">
+            +${{ tipEffect.amount }}
+          </div>
+          <!-- Thank you message -->
+          <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 text-pink-400 text-sm font-medium whitespace-nowrap tip-thanks">
+            💖 谢谢打赏!
+          </div>
+        </div>
+      </Transition>
     </template>
   </div>
 </template>
@@ -878,6 +919,139 @@ function getTierColor(tier: string): string {
   to {
     opacity: 0;
     transform: translateX(8px);
+  }
+}
+
+/* ========== TIP EFFECT ========== */
+
+/* Badge transition for sending */
+.tip-badge-enter-active {
+  animation: tip-badge-in 0.4s ease-out;
+}
+.tip-badge-leave-active {
+  animation: tip-badge-out 0.8s ease-in forwards;
+}
+
+@keyframes tip-badge-in {
+  0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+  50% { opacity: 1; transform: scale(1.2) translateY(-5px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tip-badge-out {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-20px); }
+}
+
+/* Receiving effect transition */
+.tip-receive-enter-active {
+  animation: tip-receive-in 0.4s ease-out;
+}
+.tip-receive-leave-active {
+  animation: tip-receive-out 0.6s ease-in forwards;
+}
+
+@keyframes tip-receive-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tip-receive-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Glow ring effect for receiving */
+.tip-glow-ring {
+  border: 3px solid transparent;
+  animation: tip-glow-pulse 1s ease-out infinite;
+  box-shadow: 
+    0 0 20px rgba(16, 185, 129, 0.6),
+    0 0 40px rgba(16, 185, 129, 0.4),
+    inset 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+@keyframes tip-glow-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(16, 185, 129, 0.6),
+      0 0 40px rgba(16, 185, 129, 0.4),
+      inset 0 0 20px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(16, 185, 129, 0.8),
+      0 0 60px rgba(16, 185, 129, 0.5),
+      inset 0 0 30px rgba(16, 185, 129, 0.3);
+  }
+}
+
+/* Receiving badge animation */
+.tip-badge-in {
+  animation: tip-badge-bounce-in 0.5s ease-out;
+}
+
+@keyframes tip-badge-bounce-in {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Sparkles for receiving */
+.tip-sparkles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tip-sparkle {
+  position: absolute;
+  font-size: 1rem;
+  animation: tip-sparkle-burst 1.2s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+@keyframes tip-sparkle-burst {
+  0% {
+    transform: translate(0, 0) scale(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    transform: translate(
+      calc(cos(calc(var(--i) * 45deg)) * 45px),
+      calc(sin(calc(var(--i) * 45deg)) * 45px)
+    ) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Thanks message animation */
+.tip-thanks {
+  animation: tip-thanks 1.5s ease-out forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+@keyframes tip-thanks {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
   }
 }
 </style>

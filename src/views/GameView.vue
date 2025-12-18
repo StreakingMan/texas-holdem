@@ -141,6 +141,31 @@ const isLocalPlayerWinner = computed(() => {
   return winners.some((w) => w.playerId === playerStore.playerId);
 });
 
+// Tip effect state
+interface TipEffect {
+  fromPlayerId: string;
+  toPlayerId: string;
+  amount: number;
+  timestamp: number;
+}
+const activeTipEffects = ref<TipEffect[]>([]);
+
+function addTipEffect(fromPlayerId: string, toPlayerId: string, amount: number) {
+  const effect: TipEffect = {
+    fromPlayerId,
+    toPlayerId,
+    amount,
+    timestamp: Date.now(),
+  };
+  activeTipEffects.value.push(effect);
+  // Remove effect after animation
+  setTimeout(() => {
+    activeTipEffects.value = activeTipEffects.value.filter(
+      (e) => e.timestamp !== effect.timestamp
+    );
+  }, 2000);
+}
+
 // Initialize composables
 const peer = usePeer();
 const game = useGame({
@@ -357,6 +382,9 @@ onMounted(() => {
       );
 
       if (success) {
+        // Add tip effect
+        addTipEffect(tipPayload.fromPlayerId, tipPayload.toPlayerId, tipPayload.amount);
+        
         // Add tip record to action history
         gameStore.addSystemRecord(
           "tip",
@@ -386,6 +414,9 @@ onMounted(() => {
     } else {
       // Non-host: add tip record when receiving processed tip
       if ((tipPayload as TipPayload & { processed?: boolean }).processed) {
+        // Add tip effect
+        addTipEffect(tipPayload.fromPlayerId, tipPayload.toPlayerId, tipPayload.amount);
+        
         gameStore.addSystemRecord(
           "tip",
           `💰 ${tipPayload.fromPlayerName} 打赏 ${tipPayload.toPlayerName} $${tipPayload.amount}`,
@@ -500,6 +531,9 @@ function sendTip(toPlayerId: string, amount: number): void {
     );
 
     if (success) {
+      // Add tip effect for host locally
+      addTipEffect(tipPayload.fromPlayerId, tipPayload.toPlayerId, tipPayload.amount);
+      
       // Add tip record
       gameStore.addSystemRecord(
         "tip",
@@ -1044,6 +1078,7 @@ watch(
           :player-bubbles="playerBubbles"
           :last-action="lastActionInfo"
           :is-host="isHost"
+          :tip-effects="activeTipEffects"
           @tip="sendTip"
           @open-hand-rankings="openHelpModal('hand-rankings')"
         >
