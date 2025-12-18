@@ -876,10 +876,10 @@ watch(
       <div class="flex items-center gap-3 overflow-visible">
         <!-- Logo -->
         <h1
-          class="text-xl font-semibold text-amber-400 hidden sm:flex items-center italic tracking-wide"
+          class="text-xl font-semibold text-amber-400 hidden sm:flex items-center tracking-wide"
           style="font-family: var(--font-display)"
         >
-          Texas Hold'em
+          德州扑克教学
         </h1>
 
         <!-- Room info card -->

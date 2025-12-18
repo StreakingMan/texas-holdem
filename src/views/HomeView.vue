@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePlayerStore } from '@/stores/player-store'
-import { Spade, Users, Plus, LogIn, Github } from 'lucide-vue-next'
+import { Users, Plus, LogIn, Github } from 'lucide-vue-next'
 import AvatarPicker from '@/components/common/AvatarPicker.vue'
 import { getRandomAvatar } from '@/utils/avatars'
 
@@ -105,13 +105,11 @@ async function joinRoom(): Promise<void> {
     <div class="relative z-10 w-full max-w-md">
       <!-- Logo section -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-lg shadow-emerald-500/30 mb-4">
-          <Spade class="w-10 h-10 text-white" />
-        </div>
+        <img src="/favicon.svg" alt="德州扑克" class="w-24 h-24 mx-auto mb-4 drop-shadow-2xl" />
         <h1 class="text-4xl font-bold text-white mb-2" style="font-family: var(--font-display)">
           德州扑克
         </h1>
-        <p class="text-emerald-400/80 text-sm mb-3">Texas Hold'em • 多人在线</p>
+        <p class="text-emerald-400/80 text-sm mb-3">交互式模拟教学演示 • 多人在线</p>
         <a 
           href="https://github.com/StreakingMan/texas-holdem"
           target="_blank"
