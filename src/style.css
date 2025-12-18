@@ -1,0 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Casino theme colors */
+  --color-casino-green: #0d5c2e;
+  --color-casino-dark: #0a1612;
+  --color-casino-gold: #d4af37;
+  --color-casino-red: #c41e3a;
+  --color-felt: #1a472a;
+  --color-felt-light: #2d6a4f;
+  
+  /* Fonts */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+/* Base styles */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  background: linear-gradient(135deg, var(--color-casino-dark) 0%, #1a2820 100%);
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-casino-gold);
+  border-radius: 3px;
+}
+
+/* ===== ANIMATIONS ===== */
+
+/* Card deal animation - cards flying in from deck */
+@keyframes card-deal {
+  0% {
+    transform: translate(-100px, -200px) rotate(-15deg) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Card flip animation */
+@keyframes card-flip {
+  0% { 
+    transform: rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: rotateY(90deg) scale(1.1);
+  }
+  100% { 
+    transform: rotateY(180deg) scale(1);
+  }
+}
+
+/* Card reveal animation */
+@keyframes card-reveal {
+  0% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+/* Chip slide to pot animation */
+@keyframes chip-to-pot {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--target-x, 0), var(--target-y, -100px)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Chip bounce animation */
+@keyframes chip-bounce {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+/* Chip stack grow */
+@keyframes chip-grow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Glow pulse effect */
+@keyframes glow-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 5px var(--color-casino-gold); 
+  }
+  50% { 
+    box-shadow: 0 0 20px var(--color-casino-gold), 0 0 40px var(--color-casino-gold); 
+  }
+}
+
+/* Winner celebration */
+@keyframes winner-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 30px #10b981, 0 0 60px #10b981, 0 0 90px #10b981;
+    transform: scale(1.05);
+  }
+}
+
+/* Confetti particle */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Pulse ring */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Slide in from left */
+@keyframes slide-in-left {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Slide in from right */
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Fade in up */
+@keyframes fade-in-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Scale pop */
+@keyframes scale-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Shake animation for invalid action */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Turn indicator pulse */
+@keyframes turn-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(251, 191, 36, 0);
+  }
+}
+
+/* ===== ANIMATION UTILITY CLASSES ===== */
+
+.card-deal {
+  animation: card-deal 0.5s ease-out forwards;
+}
+
+.card-flip {
+  animation: card-flip 0.6s ease-in-out;
+}
+
+.card-reveal {
+  animation: card-reveal 0.4s ease-out forwards;
+}
+
+.chip-bounce {
+  animation: chip-bounce 0.5s ease-in-out;
+}
+
+.chip-to-pot {
+  animation: chip-to-pot 0.6s ease-in-out forwards;
+}
+
+.chip-grow {
+  animation: chip-grow 0.3s ease-out forwards;
+}
+
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.winner-glow {
+  animation: winner-glow 1.5s ease-in-out infinite;
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.slide-in-left {
+  animation: slide-in-left 0.4s ease-out forwards;
+}
+
+.slide-in-right {
+  animation: slide-in-right 0.4s ease-out forwards;
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+.scale-pop {
+  animation: scale-pop 0.3s ease-out forwards;
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.turn-pulse {
+  animation: turn-pulse 2s ease-in-out infinite;
+}
+
+/* Animation delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* ===== FELT TEXTURE ===== */
+
+.felt-texture {
+  background: 
+    radial-gradient(ellipse at center, var(--color-felt-light) 0%, var(--color-felt) 50%, var(--color-casino-green) 100%);
+  position: relative;
+}
+
+.felt-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Table inner shadow */
+.felt-texture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ===== SPECIAL EFFECTS ===== */
+
+/* Shiny border effect for winner */
+.shiny-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.shiny-border::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--color-casino-gold) 60deg,
+    transparent 120deg
+  );
+  animation: rotate 3s linear infinite;
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Neon text effect */
+.neon-text {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 20px currentColor;
+}
