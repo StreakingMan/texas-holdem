@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { PlayerAction } from '@/core/types'
-import { X, Check, ArrowUp, Coins } from 'lucide-vue-next'
+import { X, Check, ArrowUp, Coins, Play } from 'lucide-vue-next'
 
 const props = defineProps<{
   isMyTurn: boolean
@@ -11,10 +11,13 @@ const props = defineProps<{
   maxRaise: number
   currentBet: number
   playerChips: number
+  isHost?: boolean
+  isGameEnded?: boolean
 }>()
 
 const emit = defineEmits<{
   action: [action: string, amount?: number]
+  nextHand: []
 }>()
 
 const raiseAmount = ref(0)
@@ -147,14 +150,28 @@ function setQuickRaise(amount: number): void {
       </div>
     </Transition>
 
+    <!-- Game ended - Host can start next hand -->
+    <div 
+      v-if="!isMyTurn && isHost && isGameEnded" 
+      class="bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-2xl shadow-xl px-6 py-3"
+    >
+      <button
+        @click="emit('nextHand')"
+        class="flex items-center gap-2 px-6 py-2.5 bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-medium rounded-xl shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
+      >
+        <Play class="w-5 h-5" />
+        开始下一局
+      </button>
+    </div>
+
     <!-- Waiting indicator (compact) -->
     <div 
-      v-if="!isMyTurn" 
+      v-else-if="!isMyTurn" 
       class="bg-gray-900/90 backdrop-blur-md border border-gray-700/50 rounded-full px-5 py-2.5 shadow-xl"
     >
       <span class="inline-flex items-center gap-2 text-gray-400 text-sm">
         <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></span>
-        等待其他玩家操作...
+        {{ isGameEnded ? '等待房主开始下一局...' : '等待其他玩家操作...' }}
       </span>
     </div>
 

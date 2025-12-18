@@ -129,6 +129,7 @@ import type { PlayerAction } from "@/core/types";
 interface LastActionInfo {
   playerId: string;
   action: PlayerAction;
+  amount?: number;
 }
 const lastActionInfo = ref<LastActionInfo | null>(null);
 
@@ -708,6 +709,7 @@ watch(
           lastActionInfo.value = {
             playerId: state.lastAction.playerId,
             action: state.lastAction.action,
+            amount: state.lastAction.amount,
           };
         }
       }
@@ -773,6 +775,7 @@ watch(
           lastActionInfo.value = {
             playerId: state.lastAction.playerId,
             action: state.lastAction.action,
+            amount: state.lastAction.amount,
           };
         }
       }
@@ -875,7 +878,7 @@ watch(
         <div class="flex items-center gap-2">
           <button
             @click="openHelpModal('win-rate')"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30"
             title="起手胜率"
           >
             <TrendingUp class="w-3.5 h-3.5" />
@@ -883,7 +886,7 @@ watch(
           </button>
           <button
             @click="openHelpModal('hand-rankings')"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors border border-purple-500/30"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors border border-purple-500/30"
             title="牌型大小"
           >
             <Layers class="w-3.5 h-3.5" />
@@ -906,15 +909,11 @@ watch(
           <button
             @click="nextHand"
             :disabled="!!nextHandError"
-            class="px-4 py-2 text-white font-medium rounded-lg shadow-lg transition-all flex items-center gap-2"
-            :class="
-              nextHandError
-                ? 'bg-gray-600 cursor-not-allowed opacity-60'
-                : 'bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-500/30'
-            "
+            class="flex items-center gap-1.5 px-2.5 py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30 disabled:text-gray-500 disabled:border-gray-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+            title="下一局"
           >
-            <Play class="w-4 h-4" />
-            下一局
+            <Play class="w-3.5 h-3.5" />
+            <span class="text-xs font-medium">下一局</span>
           </button>
           <!-- Error tooltip -->
           <div
@@ -998,6 +997,7 @@ watch(
           :local-player-id="playerStore.playerId"
           :player-bubbles="playerBubbles"
           :last-action="lastActionInfo"
+          :is-host="isHost"
           @tip="sendTip"
           @open-hand-rankings="openHelpModal('hand-rankings')"
         >
@@ -1012,7 +1012,10 @@ watch(
               :max-raise="game.maxRaise.value"
               :current-bet="gameStore.gameState?.currentBet || 0"
               :player-chips="game.localPlayer.value?.chips || 0"
+              :is-host="isHost"
+              :is-game-ended="gameStore.phase === 'ended' || gameStore.phase === 'showdown'"
               @action="handleAction"
+              @next-hand="nextHand"
             />
           </template>
         </PokerTable>

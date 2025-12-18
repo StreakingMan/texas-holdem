@@ -3,11 +3,12 @@ import { computed } from 'vue'
 import type { Player, Card as CardType, WinnerInfo, PlayerAction, GamePhase } from '@/core/types'
 import PlayerSeat, { type BubbleMessage } from './PlayerSeat.vue'
 import Card from './Card.vue'
-import PotDisplay from './PotDisplay.vue'
+import PotDisplay, { type LastActionInfo as PotLastActionInfo } from './PotDisplay.vue'
 
 export interface LastActionInfo {
   playerId: string
   action: PlayerAction
+  amount?: number
 }
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
   localPlayerId: string
   playerBubbles?: Map<string, BubbleMessage>
   lastAction?: LastActionInfo | null
+  isHost?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,6 +103,18 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
   }
   return null
 }
+
+// Format last action for PotDisplay
+const potLastAction = computed((): PotLastActionInfo | null => {
+  if (!props.lastAction) return null
+  const player = props.players.find(p => p.id === props.lastAction!.playerId)
+  return {
+    playerId: props.lastAction.playerId,
+    playerName: player?.name || '玩家',
+    action: props.lastAction.action,
+    amount: props.lastAction.amount
+  }
+})
 </script>
 
 <template>
@@ -136,8 +150,16 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
         class="absolute left-1/2 top-1/2 transform -translate-x-1/2 flex flex-col items-center gap-4 z-0"
         style="margin-top: -150px;"
       >
-        <!-- Pot display -->
-        <PotDisplay :amount="pot" :phase="phase" />
+        <!-- Pot display with game status -->
+        <PotDisplay 
+          :amount="pot" 
+          :phase="phase"
+          :current-player-id="currentPlayerId"
+          :players="players"
+          :winners="winners"
+          :last-action="potLastAction"
+          :is-host="isHost"
+        />
 
         <!-- Community cards (always show 5 slots) -->
         <div 
@@ -161,15 +183,6 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
           </template>
         </div>
 
-        <!-- Winner hand description -->
-        <div 
-          v-if="winners && winners.length > 0 && winners[0]?.hand?.description"
-          class="bg-gray-900/80 backdrop-blur px-4 py-2 rounded-lg border border-amber-500/30"
-        >
-          <div class="text-amber-400 text-sm font-medium text-center">
-            {{ winners[0]?.hand?.description }}
-          </div>
-        </div>
       </div>
     </div>
     
