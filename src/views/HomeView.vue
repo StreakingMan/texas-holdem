@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePlayerStore } from '@/stores/player-store'
-import { Spade, Users, Plus, LogIn } from 'lucide-vue-next'
+import { Spade, Users, Plus, LogIn, Github } from 'lucide-vue-next'
 import AvatarPicker from '@/components/common/AvatarPicker.vue'
 import { getRandomAvatar } from '@/utils/avatars'
 
@@ -111,7 +111,16 @@ async function joinRoom(): Promise<void> {
         <h1 class="text-4xl font-bold text-white mb-2" style="font-family: var(--font-display)">
           德州扑克
         </h1>
-        <p class="text-emerald-400/80 text-sm">Texas Hold'em • 多人在线</p>
+        <p class="text-emerald-400/80 text-sm mb-3">Texas Hold'em • 多人在线</p>
+        <a 
+          href="https://github.com/StreakingMan/texas-holdem"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-600/50 rounded-full text-gray-400 hover:text-white text-xs transition-all"
+        >
+          <Github class="w-4 h-4" />
+          <span>View on GitHub</span>
+        </a>
       </div>
 
       <!-- Card container -->

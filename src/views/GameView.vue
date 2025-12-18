@@ -13,7 +13,7 @@ import ChatBox from '@/components/chat/ChatBox.vue'
 import LobbyPanel from '@/components/lobby/LobbyPanel.vue'
 import HelpModal from '@/components/game/HelpModal.vue'
 import type { GameState, RoomState, PlayerActionPayload, ChatMessage, Card, GamePhase, TipPayload } from '@/core/types'
-import { Copy, Check, LogOut, Play, Users, TrendingUp, Layers, Coins, Plus } from 'lucide-vue-next'
+import { Copy, Check, LogOut, Play, Users, TrendingUp, Layers, Coins, Plus, Github } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -875,6 +875,15 @@ watch(
             <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800"></div>
           </div>
         </div>
+        <a 
+          href="https://github.com/StreakingMan/texas-holdem"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          title="GitHub"
+        >
+          <Github class="w-5 h-5" />
+        </a>
         <button 
           @click="leaveRoom"
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
