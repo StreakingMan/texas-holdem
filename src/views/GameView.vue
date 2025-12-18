@@ -750,7 +750,7 @@ watch(
 </script>
 
 <template>
-  <div class="h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-emerald-950 to-gray-900">
+  <div class="h-screen w-screen flex flex-col overflow-hidden bg-linear-to-br from-gray-900 via-emerald-950 to-gray-900">
     <!-- Top bar -->
     <header class="shrink-0 h-14 bg-gray-900/80 backdrop-blur border-b border-gray-700/50 flex items-center justify-between px-4 overflow-visible z-20">
       <div class="flex items-center gap-3 overflow-visible">
@@ -823,21 +823,23 @@ watch(
           </div>
         </div>
         
-        <!-- Help buttons -->
-        <div class="flex items-center gap-1">
+        <!-- Help buttons (icon + text) -->
+        <div class="flex items-center gap-2">
           <button
             @click="openHelpModal('win-rate')"
-            class="p-1.5 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30"
             title="起手胜率"
           >
-            <TrendingUp class="w-4 h-4" />
+            <TrendingUp class="w-3.5 h-3.5" />
+            <span class="text-xs font-medium">胜率</span>
           </button>
           <button
             @click="openHelpModal('hand-rankings')"
-            class="p-1.5 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors border border-purple-500/30"
             title="牌型大小"
           >
-            <Layers class="w-4 h-4" />
+            <Layers class="w-3.5 h-3.5" />
+            <span class="text-xs font-medium">牌型</span>
           </button>
         </div>
       </div>
@@ -846,7 +848,7 @@ watch(
         <button 
           v-if="canStartGame"
           @click="startGame"
-          class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-lg shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2"
+          class="px-4 py-2 bg-linear-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-lg shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2"
         >
           <Play class="w-4 h-4" />
           开始游戏
@@ -859,7 +861,7 @@ watch(
             class="px-4 py-2 text-white font-medium rounded-lg shadow-lg transition-all flex items-center gap-2"
             :class="nextHandError 
               ? 'bg-gray-600 cursor-not-allowed opacity-60' 
-              : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-500/30'"
+              : 'bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-500/30'"
           >
             <Play class="w-4 h-4" />
             下一局

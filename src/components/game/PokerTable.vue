@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Player, Card as CardType, WinnerInfo, PlayerAction } from '@/core/types'
+import type { Player, Card as CardType, WinnerInfo, PlayerAction, GamePhase } from '@/core/types'
 import PlayerSeat, { type BubbleMessage } from './PlayerSeat.vue'
 import Card from './Card.vue'
 import PotDisplay from './PotDisplay.vue'
@@ -14,7 +14,7 @@ const props = defineProps<{
   players: Player[]
   communityCards: CardType[]
   pot: number
-  phase: string
+  phase: GamePhase
   currentPlayerId?: string
   winners?: WinnerInfo[]
   localPlayerId: string
@@ -106,7 +106,7 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
   <div class="relative w-full h-full flex items-center justify-center px-8 pb-20">
     <!-- Table background -->
     <div 
-      class="relative w-full max-w-5xl aspect-[16/10] felt-texture rounded-[100px] border-8 border-amber-900/80 shadow-2xl"
+      class="relative w-full max-w-5xl aspect-16/10 felt-texture rounded-[100px] border-8 border-amber-900/80 shadow-2xl"
     >
       <!-- Table inner border -->
       <div class="absolute inset-4 rounded-[80px] border-4 border-amber-700/30"></div>
@@ -124,6 +124,8 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
         :latest-message="player ? getPlayerBubble(player.id) : null"
         :last-action="player ? getPlayerLastAction(player.id) : null"
         :local-player-chips="localPlayerChips"
+        :community-cards="communityCards"
+        :phase="phase"
         @tip="handleTip"
       />
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { X, TrendingUp, Layers, Lightbulb, Sparkles } from 'lucide-vue-next'
+import { X, TrendingUp, Layers, Lightbulb, Sparkles, Check } from 'lucide-vue-next'
 import type { Card, GamePhase } from '@/core/types'
+import { getCurrentHandRank, analyzeHand } from '@/core/hand-odds'
 
 const props = defineProps<{
   show: boolean
@@ -238,6 +239,18 @@ const phaseName = computed(() => {
   }
   return names[props.phase || ''] || ''
 })
+
+// Get current hand rank for highlighting (1-10)
+const currentHandRank = computed(() => {
+  if (!props.playerCards || !props.communityCards) return null
+  return getCurrentHandRank(props.playerCards, props.communityCards)
+})
+
+// Get hand analysis for hand-rankings view
+const handSuggestions = computed(() => {
+  if (!props.playerCards || !props.phase) return []
+  return analyzeHand(props.playerCards, props.communityCards || [], props.phase)
+})
 </script>
 
 <template>
@@ -315,7 +328,32 @@ const phaseName = computed(() => {
             </div>
           </div>
           
-          <!-- Dynamic Analysis -->
+          <!-- Dynamic Analysis for hand-rankings -->
+          <div v-if="hasCards && type === 'hand-rankings' && handSuggestions.length > 0" class="px-4 py-3 bg-purple-500/5 border-b border-purple-500/20">
+            <div class="flex items-start gap-3">
+              <Lightbulb class="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-gray-400 mb-2">当前牌力分析:</p>
+                <div class="flex flex-wrap gap-2">
+                  <div 
+                    v-for="(suggestion, i) in handSuggestions" 
+                    :key="i"
+                    class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs"
+                    :class="suggestion.type === 'made' 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'"
+                  >
+                    <Check v-if="suggestion.type === 'made'" class="w-3 h-3" />
+                    <span v-else class="text-[10px]">{{ suggestion.outs }}outs</span>
+                    <span class="font-medium">{{ suggestion.name }}</span>
+                    <span class="text-gray-400">{{ suggestion.probability }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Analysis for win-rate -->
           <div v-if="hasCards && type === 'win-rate'" class="px-4 py-3 bg-amber-500/5 border-b border-amber-500/20">
             <!-- Starting Hand Analysis -->
             <div v-if="handAnalysis" class="flex items-start gap-3">
@@ -369,11 +407,14 @@ const phaseName = computed(() => {
               <div 
                 v-for="hand in handRankings"
                 :key="hand.rank"
-                class="flex items-center gap-2 px-2 py-1.5 bg-gray-800/50 rounded-lg"
+                class="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all"
+                :class="currentHandRank === hand.rank 
+                  ? 'bg-amber-500/20 ring-2 ring-amber-400/60 shadow-lg shadow-amber-500/20' 
+                  : 'bg-gray-800/50'"
               >
                 <!-- Rank badge -->
                 <div 
-                  class="w-5 h-5 rounded bg-gradient-to-br flex items-center justify-center text-white font-bold text-xs shrink-0"
+                  class="w-5 h-5 rounded bg-linear-to-br flex items-center justify-center text-white font-bold text-xs shrink-0"
                   :class="hand.color"
                 >
                   {{ hand.rank }}
@@ -382,8 +423,9 @@ const phaseName = computed(() => {
                 <!-- Name, desc and example -->
                 <div class="flex-1 min-w-0 overflow-hidden">
                   <div class="flex items-center gap-1">
-                    <span class="text-white text-sm font-medium">{{ hand.name }}</span>
-                    <span class="text-gray-500 text-[10px]">{{ hand.desc }}</span>
+                    <span class="text-sm font-medium" :class="currentHandRank === hand.rank ? 'text-amber-400' : 'text-white'">{{ hand.name }}</span>
+                    <span v-if="currentHandRank === hand.rank" class="px-1 py-0.5 bg-amber-500 text-gray-900 text-[9px] font-bold rounded">当前</span>
+                    <span v-else class="text-gray-500 text-[10px]">{{ hand.desc }}</span>
                   </div>
                   <div class="flex flex-wrap gap-0.5">
                     <span 

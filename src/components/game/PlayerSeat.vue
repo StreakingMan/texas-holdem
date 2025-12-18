@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue'
-import type { Player, PlayerAction } from '@/core/types'
+import type { Player, PlayerAction, Card as CardType, GamePhase } from '@/core/types'
 import Card from './Card.vue'
 import ChipStack from './ChipStack.vue'
-import { Crown, Timer, Wifi, WifiOff, Gift, X } from 'lucide-vue-next'
+import { Crown, Timer, Wifi, WifiOff, Gift, X, Check, Droplet, Link } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
+import { analyzeHand, analyzeStartingHand } from '@/core/hand-odds'
 
 // Chat bubble message type
 export interface BubbleMessage {
@@ -22,6 +23,8 @@ const props = defineProps<{
   latestMessage?: BubbleMessage | null
   lastAction?: PlayerAction | null
   localPlayerChips?: number
+  communityCards?: CardType[]
+  phase?: GamePhase
 }>()
 
 const emit = defineEmits<{
@@ -140,6 +143,50 @@ const statusClass = computed(() => {
   if (props.player.folded) return 'opacity-50 grayscale'
   return ''
 })
+
+// Hand analysis for local player
+const handHints = computed(() => {
+  if (!props.isLocal || !props.player || props.player.cards.length < 2) return null
+  
+  // Preflop: show starting hand tier
+  if (props.phase === 'preflop' || !props.communityCards || props.communityCards.length === 0) {
+    const starting = analyzeStartingHand(props.player.cards)
+    if (starting) {
+      return {
+        isPreflop: true,
+        tier: starting.tier,
+        name: starting.name,
+        tip: starting.tip
+      }
+    }
+    return null
+  }
+  
+  // Post-flop: show hand analysis
+  if (props.phase && ['flop', 'turn', 'river'].includes(props.phase)) {
+    const suggestions = analyzeHand(props.player.cards, props.communityCards, props.phase)
+    if (suggestions.length > 0) {
+      return {
+        isPreflop: false,
+        suggestions
+      }
+    }
+  }
+  
+  return null
+})
+
+// Tier color mapping
+function getTierColor(tier: string): string {
+  const colors: Record<string, string> = {
+    'S': 'bg-amber-500 text-gray-900',
+    'A': 'bg-emerald-500 text-white',
+    'B': 'bg-blue-500 text-white',
+    'C': 'bg-gray-500 text-white',
+    'D': 'bg-gray-700 text-gray-400',
+  }
+  return colors[tier] || 'bg-gray-700 text-gray-400'
+}
 </script>
 
 <template>
@@ -231,17 +278,72 @@ const statusClass = computed(() => {
         </div>
       </Transition>
 
-      <!-- Cards (above avatar) -->
-      <div class="flex gap-1 mb-1">
-        <Card
-          v-for="(card, i) in displayCards"
-          :key="i"
-          :card="card"
-          :face-down="!card"
-          :size="isLocal ? 'md' : 'sm'"
-          :highlighted="isWinner"
-          :animation-delay="i * 100"
-        />
+      <!-- Cards (above avatar) with hand hints for local player -->
+      <div class="flex items-start gap-2 mb-1">
+        <!-- Cards -->
+        <div class="flex gap-1">
+          <Card
+            v-for="(card, i) in displayCards"
+            :key="i"
+            :card="card"
+            :face-down="!card"
+            :size="isLocal ? 'md' : 'sm'"
+            :highlighted="isWinner"
+            :animation-delay="i * 100"
+          />
+        </div>
+        
+        <!-- Hand hints (only for local player) -->
+        <Transition name="hint-fade">
+          <div 
+            v-if="isLocal && handHints && displayCards.length > 0 && !player.folded"
+            class="flex flex-col gap-1 bg-gray-900/90 backdrop-blur rounded-lg px-2 py-1.5 border border-gray-700/50 shadow-lg min-w-[100px] max-w-[160px]"
+          >
+            <!-- Preflop: Starting hand tier -->
+            <template v-if="handHints.isPreflop && handHints.tier">
+              <div class="flex items-center gap-1.5">
+                <span 
+                  class="px-1 py-0.5 rounded text-[10px] font-bold"
+                  :class="getTierColor(handHints.tier)"
+                >
+                  {{ handHints.tier }}
+                </span>
+                <span class="text-gray-300 text-[10px]">{{ handHints.name }}</span>
+              </div>
+              <span class="text-[9px] text-gray-500 truncate">({{ handHints.tip }})</span>
+            </template>
+            
+            <!-- Post-flop: Hand analysis -->
+            <template v-else-if="handHints.suggestions">
+              <div 
+                v-for="(suggestion, i) in handHints.suggestions" 
+                :key="i"
+                class="flex flex-col"
+                :title="suggestion.tip"
+              >
+                <div class="flex items-center gap-1">
+                  <Check v-if="suggestion.type === 'made'" class="w-3 h-3 text-emerald-400 shrink-0" />
+                  <Droplet v-else-if="suggestion.icon === 'droplet' || suggestion.icon === 'droplets'" class="w-3 h-3 text-blue-400 shrink-0" />
+                  <Link v-else class="w-3 h-3 text-purple-400 shrink-0" />
+                  <span 
+                    class="text-[10px] font-medium truncate"
+                    :class="suggestion.type === 'made' ? 'text-emerald-400' : 'text-gray-300'"
+                  >
+                    {{ suggestion.name }}
+                  </span>
+                  <span class="text-[9px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
+                </div>
+                <!-- Show tip for first suggestion -->
+                <span 
+                  v-if="i === 0" 
+                  class="text-[9px] text-gray-500 pl-4 truncate"
+                >
+                  ({{ suggestion.tip }})
+                </span>
+              </div>
+            </template>
+          </div>
+        </Transition>
       </div>
 
       <!-- Avatar and info -->
@@ -751,6 +853,37 @@ const statusClass = computed(() => {
   to {
     opacity: 0;
     transform: translateY(-8px) scale(0.95);
+  }
+}
+
+/* ========== HAND HINTS ========== */
+.hint-fade-enter-active {
+  animation: hint-in 0.3s ease-out;
+}
+
+.hint-fade-leave-active {
+  animation: hint-out 0.2s ease-in;
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes hint-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(8px);
   }
 }
 </style>
