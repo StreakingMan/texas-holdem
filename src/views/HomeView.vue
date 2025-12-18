@@ -244,6 +244,15 @@ async function joinRoom(): Promise<void> {
       <p class="text-center text-gray-600 text-xs mt-4">
         v1.0.0 • Made with ♥
       </p>
+      
+      <!-- Disclaimer -->
+      <div class="mt-6 p-3 bg-gray-900/50 border border-gray-700/30 rounded-lg max-w-md">
+        <p class="text-gray-500 text-xs text-center leading-relaxed">
+          ⚠️ 本项目为德州扑克规则<span class="text-amber-500/80">教学演示工具</span>，仅供学习交流。
+          所有筹码均为虚拟，无任何实际价值，不支持充值、提现或兑换。
+          <span class="text-red-400/80">赌博违法，请遵守当地法律法规。</span>
+        </p>
+      </div>
     </div>
   </div>
 </template>
