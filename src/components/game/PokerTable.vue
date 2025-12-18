@@ -104,7 +104,7 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
 </script>
 
 <template>
-  <div class="relative w-full h-full flex items-center justify-center px-8 pb-20">
+  <div class="relative w-full h-full flex flex-col items-center justify-center px-8">
     <!-- Table background -->
     <div 
       class="relative w-full max-w-5xl aspect-16/10 felt-texture rounded-[100px] border-8 border-amber-900/80 shadow-2xl"
@@ -131,38 +131,34 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
         @open-hand-rankings="emit('openHandRankings')"
       />
 
-      <!-- Center area (pot + community cards) -->
+      <!-- Center area (pot + community cards) - offset up by 150px -->
       <div 
-        class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4 z-0"
+        class="absolute left-1/2 top-1/2 transform -translate-x-1/2 flex flex-col items-center gap-4 z-0"
+        style="margin-top: -150px;"
       >
         <!-- Pot display -->
         <PotDisplay :amount="pot" :phase="phase" />
 
-        <!-- Community cards -->
+        <!-- Community cards (always show 5 slots) -->
         <div 
-          v-if="communityCards.length > 0"
+          v-if="phase !== 'waiting'"
           class="flex gap-2 p-3 bg-gray-900/40 backdrop-blur rounded-xl"
         >
-          <Card
-            v-for="(card, i) in communityCards"
-            :key="i"
-            :card="card"
-            size="md"
-            :animation-delay="i * 150"
-            class="deal-animation"
-          />
-        </div>
-
-        <!-- Waiting for cards placeholder -->
-        <div 
-          v-else-if="phase !== 'waiting' && phase !== 'preflop'"
-          class="flex gap-2 p-3 bg-gray-900/40 backdrop-blur rounded-xl"
-        >
-          <div 
-            v-for="i in 5" 
-            :key="i"
-            class="w-14 h-20 rounded-lg border-2 border-dashed border-gray-600/50"
-          ></div>
+          <template v-for="i in 5" :key="i">
+            <!-- Show actual card if available -->
+            <Card
+              v-if="communityCards[i - 1]"
+              :card="communityCards[i - 1]"
+              size="md"
+              :animation-delay="(i - 1) * 150"
+              class="deal-animation"
+            />
+            <!-- Show placeholder for empty slots -->
+            <div 
+              v-else
+              class="w-14 h-20 rounded-lg border-2 border-dashed border-gray-600/50"
+            ></div>
+          </template>
         </div>
 
         <!-- Winner hand description -->
@@ -175,6 +171,11 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
           </div>
         </div>
       </div>
+    </div>
+    
+    <!-- Slot for action panel below table -->
+    <div class="shrink-0 mt-6 relative z-50">
+      <slot name="action-panel"></slot>
     </div>
   </div>
 </template>

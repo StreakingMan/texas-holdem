@@ -121,11 +121,13 @@ onUnmounted(() => {
   }
 })
 
-// Position styles
+// Position styles (only local player offset up by 40px)
 const positionStyle = computed(() => ({
   left: `${props.position.x}%`,
   top: `${props.position.y}%`,
-  transform: 'translate(-50%, -50%)'
+  transform: props.isLocal 
+    ? 'translate(-50%, calc(-50% - 40px))' 
+    : 'translate(-50%, -50%)'
 }))
 
 // Card display logic
@@ -271,7 +273,7 @@ function getTierColor(tier: string): string {
       </Transition>
 
       <!-- Cards (above avatar) with hand hints for local player -->
-      <div class="flex items-start gap-2 mb-1">
+      <div class="relative mb-1">
         <!-- Cards -->
         <div class="flex gap-1">
           <Card
@@ -285,11 +287,11 @@ function getTierColor(tier: string): string {
           />
         </div>
         
-        <!-- Hand hints (only for local player) -->
+        <!-- Hand hints (only for local player) - absolute positioned to the right of cards -->
         <Transition name="hint-fade">
           <div 
             v-if="isLocal && hasHints && displayCards.length > 0 && !player.folded"
-            class="flex flex-col gap-1.5 bg-gray-900/90 backdrop-blur rounded-lg px-2 py-1.5 border border-gray-700/50 shadow-lg min-w-[100px] max-w-[160px]"
+            class="absolute left-full top-0 ml-2 flex flex-col gap-1.5 bg-gray-900/90 backdrop-blur rounded-lg px-2 py-1.5 border border-gray-700/50 shadow-lg min-w-[100px] max-w-[160px]"
           >
             <!-- Preflop: Starting hand tier -->
             <div v-if="startingHandInfo" class="flex flex-col gap-0.5">
@@ -518,10 +520,10 @@ function getTierColor(tier: string): string {
         </div>
       </div>
 
-      <!-- Turn timer indicator (below player card) -->
+      <!-- Turn timer indicator (absolutely positioned below player card) -->
       <div 
         v-if="player.isTurn && !player.isAllIn"
-        class="flex items-center justify-center gap-1 bg-amber-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-lg shadow-amber-500/30 mt-1"
+        class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex items-center justify-center gap-1 bg-amber-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-lg shadow-amber-500/30 z-10"
       >
         <Timer class="w-3 h-3" />
         <span>{{ isLocal ? '轮到你' : '思考中...' }}</span>

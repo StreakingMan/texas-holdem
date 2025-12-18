@@ -83,8 +83,70 @@ function setQuickRaise(amount: number): void {
 </script>
 
 <template>
-  <!-- Floating action panel at bottom of table -->
-  <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
+  <!-- Action panel (fixed height container to prevent layout shift) -->
+  <div class="z-30 h-[72px] flex items-center justify-center relative">
+    <!-- Raise slider bubble (outside action panel for proper backdrop blur) -->
+    <Transition name="slide-up">
+      <div 
+        v-if="isMyTurn && showRaiseSlider && canDo('raise')"
+        class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-80 z-[100]"
+      >
+        <div class="bg-gray-900/80 backdrop-blur-2xl backdrop-saturate-150 rounded-xl p-3 border border-white/20 shadow-2xl relative">
+          <!-- Close button -->
+          <button 
+            @click="showRaiseSlider = false"
+            class="absolute top-2 right-2 p-1 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <X class="w-4 h-4 text-white/70" />
+          </button>
+          
+          <!-- Rule hint -->
+          <div class="text-center text-white/70 text-xs mb-2 pb-2 border-b border-white/20 pr-6">
+            最小加注 ${{ minRaise }}（需 ≥ 上次加注增量）
+          </div>
+          <!-- Slider -->
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-white/70 text-xs min-w-[45px]">${{ minRaise }}</span>
+            <input
+              type="range"
+              v-model.number="raiseAmount"
+              :min="minRaise"
+              :max="maxRaise"
+              :step="Math.max(1, Math.floor(minRaise / 10))"
+              class="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            />
+            <span class="text-white/70 text-xs min-w-[45px] text-right">${{ maxRaise }}</span>
+          </div>
+
+          <!-- Quick raise buttons -->
+          <div class="flex items-center justify-center gap-1.5 flex-wrap">
+            <button
+              v-for="quick in quickRaises"
+              :key="quick.label"
+              @click="setQuickRaise(quick.amount)"
+              class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white/90 text-xs rounded-lg transition-colors border border-white/10"
+              :class="{ '!bg-amber-500/80 !text-white !border-amber-400/50': raiseAmount === quick.amount }"
+            >
+              {{ quick.label }}
+            </button>
+            
+            <!-- Custom amount input -->
+            <input
+              type="number"
+              v-model.number="raiseAmount"
+              :min="minRaise"
+              :max="maxRaise"
+              class="w-16 px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-center text-xs focus:outline-none focus:border-amber-400"
+              placeholder="自定义"
+            />
+          </div>
+          
+          <!-- Arrow pointing down -->
+          <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-gray-900/80"></div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Waiting indicator (compact) -->
     <div 
       v-if="!isMyTurn" 
@@ -99,70 +161,8 @@ function setQuickRaise(amount: number): void {
     <!-- Action panel (your turn) -->
     <div 
       v-else
-      class="relative bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-2xl shadow-2xl shadow-black/50 p-4 min-w-[500px]"
+      class="bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-2xl shadow-2xl shadow-black/50 p-4 min-w-[500px]"
     >
-      <!-- Raise slider bubble (pops up above) -->
-      <div class="absolute bottom-full left-0 right-0 flex justify-center mb-3 pointer-events-none">
-        <Transition name="slide-up">
-          <div 
-            v-if="showRaiseSlider && canDo('raise')"
-            class="w-80 pointer-events-auto"
-          >
-            <div class="bg-gray-900/95 backdrop-blur-md rounded-xl p-3 border border-amber-500/50 shadow-xl">
-            <!-- Rule hint -->
-            <div class="text-center text-gray-400 text-xs mb-2 pb-2 border-b border-gray-700/50">
-              最小加注 ${{ minRaise }}（需 ≥ 上次加注增量）
-            </div>
-            <!-- Slider -->
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-gray-400 text-xs min-w-[45px]">${{ minRaise }}</span>
-              <input
-                type="range"
-                v-model.number="raiseAmount"
-                :min="minRaise"
-                :max="maxRaise"
-                :step="Math.max(1, Math.floor(minRaise / 10))"
-                class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-              />
-              <span class="text-gray-400 text-xs min-w-[45px] text-right">${{ maxRaise }}</span>
-            </div>
-
-            <!-- Quick raise buttons -->
-            <div class="flex items-center justify-center gap-1.5 flex-wrap">
-              <button
-                v-for="quick in quickRaises"
-                :key="quick.label"
-                @click="setQuickRaise(quick.amount)"
-                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded-lg transition-colors"
-                :class="{ 'bg-amber-600 text-white': raiseAmount === quick.amount }"
-              >
-                {{ quick.label }}
-              </button>
-              
-              <!-- Custom amount input -->
-              <input
-                type="number"
-                v-model.number="raiseAmount"
-                :min="minRaise"
-                :max="maxRaise"
-                class="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white text-center text-xs focus:outline-none focus:border-amber-500"
-                placeholder="自定义"
-              />
-            </div>
-            
-            <!-- Arrow pointing down -->
-            <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-gray-900/95"></div>
-            </div>
-          </div>
-        </Transition>
-      </div>
-
-      <!-- Turn indicator -->
-      <div class="flex items-center justify-center gap-2 mb-3 text-amber-400 text-sm font-medium">
-        <span class="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
-        轮到你了
-      </div>
-      
       <!-- Main actions row -->
       <div class="flex items-center justify-center gap-2">
         <!-- Fold -->

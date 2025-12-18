@@ -985,8 +985,9 @@ watch(
 
     <!-- Main game area -->
     <main v-else class="flex-1 flex overflow-hidden">
-      <!-- Game table -->
-      <div class="flex-1 relative">
+      <!-- Left: Game area (table + action panel) -->
+      <div class="flex-1 relative min-w-0">
+        <!-- Game table with action panel slot -->
         <PokerTable
           :players="gameStore.players"
           :community-cards="gameStore.communityCards"
@@ -999,7 +1000,22 @@ watch(
           :last-action="lastActionInfo"
           @tip="sendTip"
           @open-hand-rankings="openHelpModal('hand-rankings')"
-        />
+        >
+          <!-- Action panel in slot -->
+          <template #action-panel>
+            <ActionPanel
+              v-if="gameStore.isGameStarted && !showLobby"
+              :is-my-turn="game.isMyTurn.value"
+              :available-actions="game.availableActions.value"
+              :call-amount="game.callAmount.value"
+              :min-raise="game.minRaise.value"
+              :max-raise="game.maxRaise.value"
+              :current-bet="gameStore.gameState?.currentBet || 0"
+              :player-chips="game.localPlayer.value?.chips || 0"
+              @action="handleAction"
+            />
+          </template>
+        </PokerTable>
 
         <!-- Lobby overlay -->
         <LobbyPanel
@@ -1009,19 +1025,6 @@ watch(
           :room-id="roomId"
           :can-start="canStartGame"
           @start="startGame"
-        />
-
-        <!-- Floating Action panel -->
-        <ActionPanel
-          v-if="gameStore.isGameStarted && !showLobby"
-          :is-my-turn="game.isMyTurn.value"
-          :available-actions="game.availableActions.value"
-          :call-amount="game.callAmount.value"
-          :min-raise="game.minRaise.value"
-          :max-raise="game.maxRaise.value"
-          :current-bet="gameStore.gameState?.currentBet || 0"
-          :player-chips="game.localPlayer.value?.chips || 0"
-          @action="handleAction"
         />
 
         <!-- Winner/Loser Celebration Overlay -->
