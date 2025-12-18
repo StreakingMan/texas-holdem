@@ -140,6 +140,39 @@ export function usePeer() {
           "[Peer] ICE state:",
           conn.peerConnection?.iceConnectionState
         );
+
+        // 当连接成功时，记录使用的候选者信息
+        if (
+          conn.peerConnection?.iceConnectionState === "connected" ||
+          conn.peerConnection?.iceConnectionState === "completed"
+        ) {
+          conn.peerConnection?.getStats().then((stats) => {
+            stats.forEach((report) => {
+              if (
+                report.type === "candidate-pair" &&
+                report.state === "succeeded"
+              ) {
+                console.log("[Peer] 成功的候选对:", report);
+              }
+              if (report.type === "local-candidate") {
+                console.log(
+                  "[Peer] 本地候选:",
+                  report.candidateType,
+                  report.address,
+                  report.protocol
+                );
+              }
+              if (report.type === "remote-candidate") {
+                console.log(
+                  "[Peer] 远程候选:",
+                  report.candidateType,
+                  report.address,
+                  report.protocol
+                );
+              }
+            });
+          });
+        }
       });
 
       conn.peerConnection?.addEventListener("icegatheringstatechange", () => {
@@ -147,6 +180,18 @@ export function usePeer() {
           "[Peer] ICE gathering:",
           conn.peerConnection?.iceGatheringState
         );
+      });
+
+      // 记录发现的 ICE 候选者
+      conn.peerConnection?.addEventListener("icecandidate", (event) => {
+        if (event.candidate) {
+          console.log(
+            "[Peer] ICE candidate:",
+            event.candidate.type,
+            event.candidate.address,
+            event.candidate.protocol
+          );
+        }
       });
 
       // Timeout for connection (increased for slower networks)
