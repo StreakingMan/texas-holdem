@@ -57,12 +57,16 @@ function getPieColor(rarity: number): string {
   return colors[rarity] || '#6b7280'
 }
 
-// Starting hand tiers (compact)
+// Starting hand tiers (2-column, no scroll, with win rates)
 const handTiers = [
-  { tier: 'S', hands: 'AA, KK, QQ, AKs', desc: '最强起手，激进加注' },
-  { tier: 'A', hands: 'JJ, TT, AKo, AQs, AJs', desc: '优质牌，可以加注' },
-  { tier: 'B', hands: '99-77, ATs, KQs, KJs, QJs', desc: '好牌，看位置行动' },
-  { tier: 'C', hands: '66-22, 同花连牌, Axs', desc: '投机牌，便宜看牌' },
+  { tier: 'S', hands: 'AA, KK, QQ', desc: '顶级对子，激进加注', winRate: '80-85%' },
+  { tier: 'S', hands: 'AKs', desc: '大同花，强势跟进', winRate: '67%' },
+  { tier: 'A', hands: 'JJ, TT', desc: '高对子，可以加注', winRate: '75-77%' },
+  { tier: 'A', hands: 'AKo, AQs, AJs', desc: '大高牌，看位置加注', winRate: '65-67%' },
+  { tier: 'B', hands: '99-77', desc: '中对子，谨慎行动', winRate: '66-72%' },
+  { tier: 'B', hands: 'KQs, QJs, JTs', desc: '同花连牌，有潜力', winRate: '60-63%' },
+  { tier: 'C', hands: '66-22', desc: '小对子，便宜看牌', winRate: '50-63%' },
+  { tier: 'C', hands: 'Axs, 同花连', desc: '投机牌，控制底池', winRate: '55-60%' },
 ]
 
 function getTierColor(tier: string): string {
@@ -467,28 +471,34 @@ const handSuggestions = computed(() => {
               </div>
             </div>
             
-            <!-- Win Rates (compact) -->
-            <div v-else class="space-y-1.5">
-              <div 
-                v-for="item in handTiers"
-                :key="item.tier"
-                class="flex items-center gap-2 px-2 py-2 bg-gray-800/50 rounded-lg"
-              >
-                <span 
-                  class="w-6 h-6 rounded flex items-center justify-center font-bold text-xs shrink-0"
-                  :class="getTierColor(item.tier)"
+            <!-- Win Rates (2-column layout) -->
+            <div v-else class="space-y-2">
+              <!-- 2-column grid -->
+              <div class="grid grid-cols-2 gap-1.5">
+                <div 
+                  v-for="(item, index) in handTiers"
+                  :key="index"
+                  class="flex items-center gap-2 px-2 py-1.5 bg-gray-800/50 rounded-lg"
                 >
-                  {{ item.tier }}
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-white text-sm font-mono">{{ item.hands }}</div>
-                  <div class="text-gray-400 text-xs">{{ item.desc }}</div>
+                  <span 
+                    class="w-5 h-5 rounded flex items-center justify-center font-bold text-xs shrink-0"
+                    :class="getTierColor(item.tier)"
+                  >
+                    {{ item.tier }}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="text-white text-sm font-mono">{{ item.hands }}</span>
+                      <span class="text-emerald-400 text-xs font-medium ml-auto">{{ item.winRate }}</span>
+                    </div>
+                    <div class="text-gray-500 text-xs truncate">{{ item.desc }}</div>
+                  </div>
                 </div>
               </div>
               
               <!-- Quick legend -->
-              <div class="mt-2 px-2 py-2 bg-gray-800/30 rounded-lg text-xs text-gray-500">
-                s = 同花 | o = 杂色 | 胜率基于1v1场景
+              <div class="px-2 py-2 bg-gray-800/30 rounded-lg text-xs text-gray-500">
+                s = 同花 | o = 杂色 | 胜率基于1v1单挑场景
               </div>
             </div>
           </div>
