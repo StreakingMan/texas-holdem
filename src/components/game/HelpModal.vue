@@ -344,7 +344,7 @@ const handSuggestions = computed(() => {
                       : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'"
                   >
                     <Check v-if="suggestion.type === 'made'" class="w-3 h-3" />
-                    <span v-else class="text-[10px]">{{ suggestion.outs }}outs</span>
+                    <span v-else class="text-xs">{{ suggestion.outs }}outs</span>
                     <span class="font-medium">{{ suggestion.name }}</span>
                     <span class="text-gray-400">{{ suggestion.probability }}%</span>
                   </div>
@@ -361,14 +361,14 @@ const handSuggestions = computed(() => {
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <span 
-                    class="px-1.5 py-0.5 rounded text-xs font-bold"
+                    class="px-1.5 py-0.5 rounded text-sm font-bold"
                     :class="getTierColor(handAnalysis.tier)"
                   >
                     {{ handAnalysis.tier }}级
                   </span>
                   <span class="text-amber-400 font-medium text-sm">{{ handAnalysis.tierName }}</span>
-                  <span v-if="handAnalysis.isSuited" class="text-xs text-blue-400">同花</span>
-                  <span v-if="handAnalysis.connected" class="text-xs text-purple-400">连牌</span>
+                  <span v-if="handAnalysis.isSuited" class="text-sm text-blue-400">同花</span>
+                  <span v-if="handAnalysis.connected" class="text-sm text-purple-400">连牌</span>
                 </div>
                 
                 <!-- Board Analysis -->
@@ -424,14 +424,14 @@ const handSuggestions = computed(() => {
                 <div class="flex-1 min-w-0 overflow-hidden">
                   <div class="flex items-center gap-1">
                     <span class="text-sm font-medium" :class="currentHandRank === hand.rank ? 'text-amber-400' : 'text-white'">{{ hand.name }}</span>
-                    <span v-if="currentHandRank === hand.rank" class="px-1 py-0.5 bg-amber-500 text-gray-900 text-[9px] font-bold rounded">当前</span>
-                    <span v-else class="text-gray-500 text-[10px]">{{ hand.desc }}</span>
+                    <span v-if="currentHandRank === hand.rank" class="px-1 py-0.5 bg-amber-500 text-gray-900 text-[11px] font-bold rounded">当前</span>
+                    <span v-else class="text-gray-500 text-xs">{{ hand.desc }}</span>
                   </div>
                   <div class="flex flex-wrap gap-0.5">
                     <span 
                       v-for="(card, i) in hand.example.split(' ')"
                       :key="i"
-                      class="text-[10px] font-mono"
+                      class="text-xs font-mono"
                       :class="card.includes('♥') || card.includes('♦') ? 'text-red-400' : 'text-gray-400'"
                     >{{ card }}</span>
                   </div>
@@ -460,7 +460,7 @@ const handSuggestions = computed(() => {
                     />
                   </svg>
                   <span 
-                    class="text-[9px] font-mono mt-0.5 text-center"
+                    class="text-[11px] font-mono mt-0.5 text-center"
                     :class="hand.rarity >= 4 ? 'text-amber-400' : hand.rarity >= 3 ? 'text-purple-400' : 'text-gray-500'"
                   >{{ formatProb(hand.prob) }}</span>
                 </div>

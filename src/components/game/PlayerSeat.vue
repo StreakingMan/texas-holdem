@@ -271,7 +271,7 @@ function getTierColor(tier: string): string {
           class="absolute z-20 bottom-full mb-2 left-0 right-0 flex justify-center pointer-events-none"
         >
           <div class="relative bg-white text-gray-800 px-3 py-1.5 rounded-xl shadow-lg max-w-[150px]">
-            <p class="text-xs wrap-break-word line-clamp-2">{{ bubbleContent }}</p>
+            <p class="text-sm wrap-break-word line-clamp-2">{{ bubbleContent }}</p>
             <!-- Arrow pointing down -->
             <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-white"></div>
           </div>
@@ -303,14 +303,14 @@ function getTierColor(tier: string): string {
             <template v-if="handHints.isPreflop && handHints.tier">
               <div class="flex items-center gap-1.5">
                 <span 
-                  class="px-1 py-0.5 rounded text-[10px] font-bold"
+                  class="px-1 py-0.5 rounded text-xs font-bold"
                   :class="getTierColor(handHints.tier)"
                 >
                   {{ handHints.tier }}
                 </span>
-                <span class="text-gray-300 text-[10px]">{{ handHints.name }}</span>
+                <span class="text-gray-300 text-xs">{{ handHints.name }}</span>
               </div>
-              <span class="text-[9px] text-gray-500 truncate">({{ handHints.tip }})</span>
+              <span class="text-[11px] text-gray-500 truncate">({{ handHints.tip }})</span>
             </template>
             
             <!-- Post-flop: Hand analysis -->
@@ -326,17 +326,17 @@ function getTierColor(tier: string): string {
                   <Droplet v-else-if="suggestion.icon === 'droplet' || suggestion.icon === 'droplets'" class="w-3 h-3 text-blue-400 shrink-0" />
                   <Link v-else class="w-3 h-3 text-purple-400 shrink-0" />
                   <span 
-                    class="text-[10px] font-medium truncate"
+                    class="text-xs font-medium truncate"
                     :class="suggestion.type === 'made' ? 'text-emerald-400' : 'text-gray-300'"
                   >
                     {{ suggestion.name }}
                   </span>
-                  <span class="text-[9px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
+                  <span class="text-[11px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
                 </div>
                 <!-- Show tip for first suggestion -->
                 <span 
                   v-if="i === 0" 
-                  class="text-[9px] text-gray-500 pl-4 truncate"
+                  class="text-[11px] text-gray-500 pl-4 truncate"
                 >
                   ({{ suggestion.tip }})
                 </span>

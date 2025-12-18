@@ -61,7 +61,7 @@ const isUnknown = computed(() =>
         ]"
       >
         <div>{{ card.rank }}</div>
-        <div :class="size === 'sm' ? 'text-[8px]' : 'text-xs'">{{ suitSymbol }}</div>
+        <div :class="size === 'sm' ? 'text-[10px]' : 'text-xs'">{{ suitSymbol }}</div>
       </div>
 
       <!-- Center suit -->
@@ -84,7 +84,7 @@ const isUnknown = computed(() =>
         ]"
       >
         <div>{{ card.rank }}</div>
-        <div :class="size === 'sm' ? 'text-[8px]' : 'text-xs'">{{ suitSymbol }}</div>
+        <div :class="size === 'sm' ? 'text-[10px]' : 'text-xs'">{{ suitSymbol }}</div>
       </div>
     </div>
 
