@@ -998,6 +998,7 @@ watch(
           :player-bubbles="playerBubbles"
           :last-action="lastActionInfo"
           @tip="sendTip"
+          @open-hand-rankings="openHelpModal('hand-rankings')"
         />
 
         <!-- Lobby overlay -->

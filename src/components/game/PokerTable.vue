@@ -24,6 +24,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   tip: [playerId: string, amount: number]
+  openHandRankings: []
 }>()
 
 // Local player chips for tip validation
@@ -127,6 +128,7 @@ function getPlayerLastAction(playerId: string): PlayerAction | null {
         :community-cards="communityCards"
         :phase="phase"
         @tip="handleTip"
+        @open-hand-rankings="emit('openHandRankings')"
       />
 
       <!-- Center area (pot + community cards) -->

@@ -209,16 +209,16 @@ function getCardsToCome(phase: GamePhase): number {
 
 // Tips for made hands - explain what the hand is
 const MADE_HAND_TIPS: Record<HandRank, string> = {
-  "royal-flush": "A到10同花色，最强牌型",
-  "straight-flush": "五张连续同花色",
-  "four-of-a-kind": "四张相同点数",
-  "full-house": "三张同点+一对",
-  flush: "五张同花色",
-  straight: "五张连续点数",
-  "three-of-a-kind": "三张相同点数",
-  "two-pair": "两组相同点数的牌",
-  "one-pair": "两张相同点数",
-  "high-card": "无任何组合",
+  "royal-flush": "A到10同花色，德州扑克最强牌型，极其罕见",
+  "straight-flush": "五张连续的同花色牌，仅次于皇家同花顺",
+  "four-of-a-kind": "四张相同点数的牌，非常强的牌型",
+  "full-house": "三张同点数+一对，俗称葫芦，强牌",
+  flush: "五张相同花色的牌，不需要连续",
+  straight: "五张连续点数的牌，不限花色",
+  "three-of-a-kind": "三张相同点数的牌，中等偏强牌型",
+  "two-pair": "两组不同点数的对子，常见的中等牌型",
+  "one-pair": "两张相同点数的牌，基础牌型",
+  "high-card": "没有任何组合，比大小看最高牌",
 };
 
 /**
@@ -235,6 +235,9 @@ function getMadeHandInfo(
 
   try {
     const result = evaluateHand(allCards);
+    // Don't show "high card" as it's not useful
+    if (result.rank === "high-card") return null;
+    
     return {
       type: "made",
       name: HAND_RANK_NAMES[result.rank],
@@ -290,7 +293,7 @@ export function analyzeHand(
         probability: prob,
         outs: flushDraw.outs,
         icon: "droplet",
-        tip: "已有4张同花色，差1张成同花",
+        tip: "已有4张同花色，再来1张同花色即成同花",
       });
     }
   }
@@ -317,7 +320,7 @@ export function analyzeHand(
         probability: prob,
         outs: straightDraw.outs,
         icon: "link",
-        tip: isOesd ? "如5678，差4或9成顺" : "如5679，只差8成顺",
+        tip: isOesd ? "两头都能成顺，如5678差4或9" : "中间缺一张，如5679只差8成顺",
       });
     }
   }
@@ -332,7 +335,7 @@ export function analyzeHand(
         probability: 4,
         outs: backdoorFlush.outs,
         icon: "droplets",
-        tip: "有3张同花色，需再来2张",
+        tip: "有3张同花色，转牌和河牌都来同花才能成",
       });
     }
 
@@ -344,7 +347,80 @@ export function analyzeHand(
         probability: 4,
         outs: backdoorStraight.outs,
         icon: "links",
-        tip: "有3张接近连续，需再来2张",
+        tip: "有3张接近连续，需要转牌河牌配合成顺",
+      });
+    }
+  }
+
+  // 5. Check for hand improvement draws based on current made hand
+  if (madeHand && cardsToCome > 0) {
+    const rankCount: Record<string, number> = {};
+    allCards.forEach((card) => {
+      rankCount[card.rank] = (rankCount[card.rank] || 0) + 1;
+    });
+
+    const pairs = Object.entries(rankCount).filter(([, c]) => c === 2);
+    const trips = Object.entries(rankCount).filter(([, c]) => c === 3);
+
+    // One pair can improve to two pair, three of a kind
+    if (madeHand.name === "一对" && pairs.length === 1) {
+      // Outs for two pair: 6 cards (3 for each of the other 2 hole/board cards)
+      const twoPairProb = Math.round(outsToPercent(6, cardsToCome));
+      suggestions.push({
+        type: "draw",
+        name: "升级两对",
+        probability: twoPairProb,
+        outs: 6,
+        icon: "trending-up",
+        tip: "其他牌再配成一对，形成两对牌型",
+      });
+      // Outs for three of a kind: 2 cards
+      const tripsProb = Math.round(outsToPercent(2, cardsToCome));
+      suggestions.push({
+        type: "draw",
+        name: "升级三条",
+        probability: tripsProb,
+        outs: 2,
+        icon: "trending-up",
+        tip: "再来一张相同点数，一对变三条",
+      });
+    }
+
+    // Two pair can improve to full house
+    if (madeHand.name === "两对" && pairs.length >= 2) {
+      // Outs for full house: 4 cards (2 for each pair)
+      const fullHouseProb = Math.round(outsToPercent(4, cardsToCome));
+      suggestions.push({
+        type: "draw",
+        name: "升级葫芦",
+        probability: fullHouseProb,
+        outs: 4,
+        icon: "trending-up",
+        tip: "任一对子再来一张，两对变葫芦",
+      });
+    }
+
+    // Three of a kind can improve to full house or four of a kind
+    if (madeHand.name === "三条" && trips.length === 1) {
+      // Outs for full house: ~6 cards (pair any of the other cards)
+      const fullHouseProb = Math.round(outsToPercent(6, cardsToCome));
+      suggestions.push({
+        type: "draw",
+        name: "升级葫芦",
+        probability: fullHouseProb,
+        outs: 6,
+        icon: "trending-up",
+        tip: "其他牌配成对子，三条变葫芦",
+      });
+      // Outs for four of a kind: 1 card
+      const quadsProb = Math.round(outsToPercent(1, cardsToCome));
+      suggestions.push({
+        type: "draw",
+        name: "升级四条",
+        probability: quadsProb,
+        outs: 1,
+        icon: "trending-up",
+        tip: "再来最后一张相同点数，成为四条",
       });
     }
   }
@@ -381,7 +457,7 @@ const TIER_TIPS: Record<string, string> = {
   A: "优质起手牌，如QQ/JJ/AQ",
   B: "中等牌，同花连牌等",
   C: "投机牌，小对子等",
-  D: "弱牌，不成对不连续",
+  D: "弱牌，谨慎游戏",
 };
 
 /**
@@ -458,8 +534,25 @@ export function analyzeStartingHand(
     } else if (isConnected && lowRank >= 7) {
       tier = "C";
       name = "连牌";
+    } else if (isSuited && isConnected) {
+      // Small suited connectors (like 5-6 suited)
+      tier = "C";
+      name = "小同花连";
+    } else if (isConnected) {
+      // Small connectors (like 5-6 offsuit)
+      tier = "D";
+      name = "小连牌";
     }
   }
 
-  return { tier, name, tip: TIER_TIPS[tier] || "弱牌，建议弃牌" };
+  // Custom tips for specific hand types
+  let tip = TIER_TIPS[tier] || "弱牌，建议弃牌";
+  if (name === "小连牌") {
+    tip = "小连牌，便宜看牌博顺子";
+  } else if (name === "小同花连") {
+    tip = "小同花连，有同花顺潜力";
+  }
+
+  return { tier, name, tip };
 }
+

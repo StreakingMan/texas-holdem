@@ -42,7 +42,7 @@ const handRankings = [
   { rank: 10, name: '高牌', desc: '无任何牌型', example: '♠A ♥J ♦8 ♣5 ♠2', prob: 50.1, rarity: 1, color: 'from-gray-400 to-slate-500' },
 ]
 
-// Format probability for display
+// Format probability for display (percentage)
 function formatProb(prob: number): string {
   if (prob < 0.001) return prob.toFixed(5) + '%'
   if (prob < 0.01) return prob.toFixed(4) + '%'
@@ -51,11 +51,133 @@ function formatProb(prob: number): string {
   return prob.toFixed(1) + '%'
 }
 
-// Get pie chart color based on rarity
+// Format probability as Chinese text (for no-game state)
+function formatProbText(prob: number): string {
+  if (prob < 0.01) {
+    // 万分之
+    const val = prob * 100
+    return `万分之${val.toFixed(1)}`
+  } else if (prob < 1) {
+    // 千分之
+    const val = prob * 10
+    return `千分之${val.toFixed(1)}`
+  } else if (prob < 10) {
+    // 百分之
+    return `百分之${prob.toFixed(1)}`
+  } else {
+    return `${prob.toFixed(0)}%`
+  }
+}
+
+// Get pie chart color based on probability value
 function getPieColor(rarity: number): string {
   const colors = ['#6b7280', '#6b7280', '#22d3ee', '#a855f7', '#f59e0b', '#fbbf24']
   return colors[rarity] || '#6b7280'
 }
+
+// Get color based on live probability
+function getLiveProbColor(prob: number): string {
+  if (prob >= 80) return '#fbbf24' // amber - very high
+  if (prob >= 50) return '#10b981' // emerald - high  
+  if (prob >= 20) return '#3b82f6' // blue - medium
+  if (prob >= 5) return '#a855f7'  // purple - low
+  return '#6b7280' // gray - very low
+}
+
+// Calculate live probability for each hand rank based on current cards
+const liveHandProbabilities = computed(() => {
+  const result: Record<number, number> = {}
+  
+  // If no player cards, return empty (will show text instead)
+  if (!props.playerCards || props.playerCards.length < 2) {
+    return result
+  }
+  
+  const currentRank = currentHandRank.value
+  const communityCount = props.communityCards?.length || 0
+  const cardsTocome = communityCount === 0 ? 5 : communityCount === 3 ? 2 : communityCount === 4 ? 1 : 0
+  
+  // Analyze hole cards for preflop probabilities
+  const [card1, card2] = props.playerCards
+  const isPair = card1.rank === card2.rank
+  const isSuited = card1.suit === card2.suit
+  const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+  const r1 = ranks.indexOf(card1.rank)
+  const r2 = ranks.indexOf(card2.rank)
+  const gap = Math.abs(r1 - r2)
+  const isConnected = gap <= 4 // Can make a straight
+  
+  // Current hand rank is 100%, weaker ranks are 0% (mutually exclusive)
+  if (currentRank !== null) {
+    result[currentRank] = 100
+    
+    // Weaker hands (higher rank number) are 0% - you already have better
+    for (let i = currentRank + 1; i <= 10; i++) {
+      result[i] = 0
+    }
+  }
+  
+  // Get suggestions from analyzeHand for draw probabilities
+  if (props.phase && props.communityCards && communityCount > 0) {
+    const suggestions = analyzeHand(props.playerCards, props.communityCards, props.phase)
+    
+    for (const suggestion of suggestions) {
+      if (suggestion.type === 'draw') {
+        // Map suggestion name to rank
+        if (suggestion.name.includes('同花')) {
+          result[5] = Math.max(result[5] || 0, suggestion.probability)
+        }
+        if (suggestion.name.includes('顺')) {
+          result[6] = Math.max(result[6] || 0, suggestion.probability)
+        }
+      }
+    }
+  }
+  
+  // Calculate probabilities based on hole cards and remaining cards
+  if (cardsTocome > 0) {
+    // Base improvement chances adjusted by hole cards
+    const baseChances: Record<number, number> = {
+      1: 0.003,   // Royal flush base
+      2: 0.02,    // Straight flush base
+      3: isPair ? 0.8 : 0.1,    // Four of a kind (much higher with pair)
+      4: isPair ? 2.5 : 0.8,    // Full house (higher with pair)
+      5: isSuited ? 6.4 : 0.8,  // Flush (6.4% with suited cards preflop)
+      6: isConnected ? 4.5 : 1.5, // Straight (higher with connected cards)
+      7: isPair ? 12 : 4,       // Three of a kind
+      8: isPair ? 0 : 16,       // Two pair (0 if already have pair)
+      9: isPair ? 0 : 45,       // One pair (0 if already have pair)
+      10: 100                    // High card
+    }
+    
+    // Adjust based on cards to come
+    const multiplier = cardsTocome === 5 ? 1 : cardsTocome === 2 ? 0.6 : 0.3
+    
+    for (let rank = 1; rank <= 10; rank++) {
+      // Skip if already calculated or if it's weaker than current hand
+      if (result[rank] !== undefined) continue
+      if (currentRank !== null && rank >= currentRank) continue
+      
+      let prob = baseChances[rank] || 0
+      
+      // Apply multiplier for post-flop (fewer cards to come = lower probability)
+      if (rank <= 6) {
+        prob = prob * multiplier
+      }
+      
+      result[rank] = Math.min(Math.round(prob * 10) / 10, 99)
+    }
+  } else {
+    // River - no more cards, only current hand matters
+    for (let rank = 1; rank <= 10; rank++) {
+      if (result[rank] === undefined) {
+        result[rank] = 0
+      }
+    }
+  }
+  
+  return result
+})
 
 // Starting hand tiers (2-column, no scroll, with win rates)
 const handTiers = [
@@ -279,7 +401,7 @@ const handSuggestions = computed(() => {
                 <TrendingUp v-else class="w-4 h-4 text-amber-400" />
               </div>
               <h2 class="text-base font-bold text-white">
-                {{ type === 'hand-rankings' ? '牌型大小' : '起手牌指南' }}
+                {{ type === 'hand-rankings' ? (hasCards ? '牌型大小及中牌率' : '牌型大小') : '起手牌指南' }}
               </h2>
             </div>
             <button 
@@ -338,19 +460,24 @@ const handSuggestions = computed(() => {
               <Lightbulb class="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
               <div class="flex-1 min-w-0">
                 <p class="text-xs text-gray-400 mb-2">当前牌力分析:</p>
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-col gap-1.5">
                   <div 
                     v-for="(suggestion, i) in handSuggestions" 
                     :key="i"
-                    class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs"
-                    :class="suggestion.type === 'made' 
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'"
+                    class="flex items-center gap-2"
                   >
-                    <Check v-if="suggestion.type === 'made'" class="w-3 h-3" />
-                    <span v-else class="text-xs">{{ suggestion.outs }}outs</span>
-                    <span class="font-medium">{{ suggestion.name }}</span>
-                    <span class="text-gray-400">{{ suggestion.probability }}%</span>
+                    <div 
+                      class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs"
+                      :class="suggestion.type === 'made' 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'"
+                    >
+                      <Check v-if="suggestion.type === 'made'" class="w-3 h-3" />
+                      <span v-else class="text-xs">{{ suggestion.outs }}outs</span>
+                      <span class="font-medium">{{ suggestion.name }}</span>
+                      <span class="text-gray-400">{{ suggestion.probability }}%</span>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ suggestion.tip }}</span>
                   </div>
                 </div>
               </div>
@@ -441,32 +568,40 @@ const handSuggestions = computed(() => {
                   </div>
                 </div>
                 
-                <!-- Pie chart + probability (fixed width, right aligned) -->
-                <div class="flex flex-col items-center w-10 shrink-0 ml-auto">
-                  <!-- Mini pie chart (SVG) -->
-                  <svg width="24" height="24" viewBox="0 0 24 24" class="transform -rotate-90">
-                    <!-- Background circle -->
-                    <circle 
-                      cx="12" cy="12" r="10" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      stroke-width="4"
-                      class="text-gray-700"
-                    />
-                    <!-- Filled arc -->
-                    <circle 
-                      cx="12" cy="12" r="10" 
-                      fill="none" 
-                      :stroke="getPieColor(hand.rarity)"
-                      stroke-width="4"
-                      :stroke-dasharray="`${Math.max(0.5, hand.prob * 0.628)} 62.8`"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                  <span 
-                    class="text-[11px] font-mono mt-0.5 text-center"
-                    :class="hand.rarity >= 4 ? 'text-amber-400' : hand.rarity >= 3 ? 'text-purple-400' : 'text-gray-500'"
-                  >{{ formatProb(hand.prob) }}</span>
+                <!-- Live probability (when in game) or text probability (when not) -->
+                <div class="flex flex-col items-center shrink-0 ml-auto" :class="hasCards ? 'w-10' : 'w-16'">
+                  <!-- In game: Show pie chart with live probability -->
+                  <template v-if="hasCards">
+                    <svg width="24" height="24" viewBox="0 0 24 24" class="transform -rotate-90">
+                      <circle 
+                        cx="12" cy="12" r="10" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        stroke-width="4"
+                        class="text-gray-700"
+                      />
+                      <circle 
+                        cx="12" cy="12" r="10" 
+                        fill="none" 
+                        :stroke="getLiveProbColor(liveHandProbabilities[hand.rank] || 0)"
+                        stroke-width="4"
+                        :stroke-dasharray="`${Math.max(0.5, (liveHandProbabilities[hand.rank] || 0) * 0.628)} 62.8`"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    <span 
+                      class="text-[11px] font-mono mt-0.5 text-center"
+                      :class="(liveHandProbabilities[hand.rank] || 0) >= 80 ? 'text-amber-400' : 
+                              (liveHandProbabilities[hand.rank] || 0) >= 20 ? 'text-emerald-400' : 'text-gray-500'"
+                    >{{ (liveHandProbabilities[hand.rank] || 0).toFixed(0) }}%</span>
+                  </template>
+                  <!-- Not in game: Show text probability -->
+                  <template v-else>
+                    <span 
+                      class="text-[11px] text-right leading-tight"
+                      :class="hand.rarity >= 4 ? 'text-amber-400' : hand.rarity >= 3 ? 'text-purple-400' : 'text-gray-500'"
+                    >{{ formatProbText(hand.prob) }}</span>
+                  </template>
                 </div>
               </div>
             </div>

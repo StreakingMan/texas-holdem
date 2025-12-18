@@ -29,6 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   tip: [playerId: string, amount: number]
+  openHandRankings: []
 }>()
 
 // Bubble visibility state
@@ -144,36 +145,27 @@ const statusClass = computed(() => {
   return ''
 })
 
-// Hand analysis for local player
-const handHints = computed(() => {
+// Starting hand analysis (preflop only)
+const startingHandInfo = computed(() => {
   if (!props.isLocal || !props.player || props.player.cards.length < 2) return null
+  if (props.phase !== 'preflop' && props.communityCards && props.communityCards.length > 0) return null
   
-  // Preflop: show starting hand tier
-  if (props.phase === 'preflop' || !props.communityCards || props.communityCards.length === 0) {
-    const starting = analyzeStartingHand(props.player.cards)
-    if (starting) {
-      return {
-        isPreflop: true,
-        tier: starting.tier,
-        name: starting.name,
-        tip: starting.tip
-      }
-    }
-    return null
-  }
+  return analyzeStartingHand(props.player.cards)
+})
+
+// Hand odds analysis (always available when has community cards)
+const handOddsInfo = computed(() => {
+  if (!props.isLocal || !props.player || props.player.cards.length < 2) return null
+  if (!props.communityCards || props.communityCards.length === 0) return null
+  if (!props.phase || !['flop', 'turn', 'river'].includes(props.phase)) return null
   
-  // Post-flop: show hand analysis
-  if (props.phase && ['flop', 'turn', 'river'].includes(props.phase)) {
-    const suggestions = analyzeHand(props.player.cards, props.communityCards, props.phase)
-    if (suggestions.length > 0) {
-      return {
-        isPreflop: false,
-        suggestions
-      }
-    }
-  }
-  
-  return null
+  // analyzeHand already returns top 3 sorted by probability
+  return analyzeHand(props.player.cards, props.communityCards, props.phase)
+})
+
+// Check if we have any hints to show
+const hasHints = computed(() => {
+  return startingHandInfo.value || (handOddsInfo.value && handOddsInfo.value.length > 0)
 })
 
 // Tier color mapping
@@ -296,52 +288,52 @@ function getTierColor(tier: string): string {
         <!-- Hand hints (only for local player) -->
         <Transition name="hint-fade">
           <div 
-            v-if="isLocal && handHints && displayCards.length > 0 && !player.folded"
-            class="flex flex-col gap-1 bg-gray-900/90 backdrop-blur rounded-lg px-2 py-1.5 border border-gray-700/50 shadow-lg min-w-[100px] max-w-[160px]"
+            v-if="isLocal && hasHints && displayCards.length > 0 && !player.folded"
+            class="flex flex-col gap-1.5 bg-gray-900/90 backdrop-blur rounded-lg px-2 py-1.5 border border-gray-700/50 shadow-lg min-w-[100px] max-w-[160px]"
           >
             <!-- Preflop: Starting hand tier -->
-            <template v-if="handHints.isPreflop && handHints.tier">
+            <div v-if="startingHandInfo" class="flex flex-col gap-0.5">
+              <span class="text-[10px] text-gray-500 font-medium">起手牌力</span>
               <div class="flex items-center gap-1.5">
                 <span 
                   class="px-1 py-0.5 rounded text-xs font-bold"
-                  :class="getTierColor(handHints.tier)"
+                  :class="getTierColor(startingHandInfo.tier)"
                 >
-                  {{ handHints.tier }}
+                  {{ startingHandInfo.tier }}
                 </span>
-                <span class="text-gray-300 text-xs">{{ handHints.name }}</span>
+                <span class="text-gray-300 text-xs">{{ startingHandInfo.name }}</span>
               </div>
-              <span class="text-[11px] text-gray-500 truncate">({{ handHints.tip }})</span>
-            </template>
+              <span class="text-[11px] text-gray-500 truncate">{{ startingHandInfo.tip }}</span>
+            </div>
             
-            <!-- Post-flop: Hand analysis -->
-            <template v-else-if="handHints.suggestions">
+            <!-- Post-flop: Hand odds -->
+            <div v-if="handOddsInfo && handOddsInfo.length > 0" class="flex flex-col gap-0.5">
+              <span class="text-[10px] text-gray-500 font-medium">中牌概率</span>
               <div 
-                v-for="(suggestion, i) in handHints.suggestions" 
+                v-for="(suggestion, i) in handOddsInfo" 
                 :key="i"
-                class="flex flex-col"
+                class="flex items-center gap-1"
                 :title="suggestion.tip"
               >
-                <div class="flex items-center gap-1">
-                  <Check v-if="suggestion.type === 'made'" class="w-3 h-3 text-emerald-400 shrink-0" />
-                  <Droplet v-else-if="suggestion.icon === 'droplet' || suggestion.icon === 'droplets'" class="w-3 h-3 text-blue-400 shrink-0" />
-                  <Link v-else class="w-3 h-3 text-purple-400 shrink-0" />
-                  <span 
-                    class="text-xs font-medium truncate"
-                    :class="suggestion.type === 'made' ? 'text-emerald-400' : 'text-gray-300'"
-                  >
-                    {{ suggestion.name }}
-                  </span>
-                  <span class="text-[11px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
-                </div>
-                <!-- Show tip for first suggestion -->
+                <Check v-if="suggestion.type === 'made'" class="w-3 h-3 text-emerald-400 shrink-0" />
+                <Droplet v-else-if="suggestion.icon === 'droplet' || suggestion.icon === 'droplets'" class="w-3 h-3 text-blue-400 shrink-0" />
+                <Link v-else class="w-3 h-3 text-purple-400 shrink-0" />
                 <span 
-                  v-if="i === 0" 
-                  class="text-[11px] text-gray-500 pl-4 truncate"
+                  class="text-xs font-medium truncate"
+                  :class="suggestion.type === 'made' ? 'text-emerald-400' : 'text-gray-300'"
                 >
-                  ({{ suggestion.tip }})
+                  {{ suggestion.name }}
                 </span>
+                <span class="text-[11px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
               </div>
-            </template>
+              <!-- View more button -->
+              <button 
+                @click="emit('openHandRankings')"
+                class="mt-1 text-[10px] text-amber-400 hover:text-amber-300 text-center transition-colors"
+              >
+                查看更多 →
+              </button>
+            </div>
           </div>
         </Transition>
       </div>
