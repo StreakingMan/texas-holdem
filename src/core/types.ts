@@ -139,6 +139,7 @@ export interface GameSettings {
 export type MessageType =
   | "player-join"
   | "player-leave"
+  | "player-left"
   | "player-ready"
   | "game-state"
   | "player-action"

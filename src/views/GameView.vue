@@ -207,11 +207,19 @@ onMounted(async () => {
   }
 });
 
+// Map senderId to player name for leave handling
+const senderPlayerNames = new Map<string, string>();
+
 // Setup message handlers
 onMounted(() => {
   // Handle player join (host only)
   peer.onMessage("player-join", (message, senderId) => {
     if (isHost) {
+      const payload = message.payload as { player: { id: string; name: string } };
+      
+      // Store sender -> player name mapping for leave handling
+      senderPlayerNames.set(senderId, payload.player.name);
+      
       const isGameInProgress =
         game.gameState.value?.phase && game.gameState.value.phase !== "waiting";
 
@@ -232,8 +240,6 @@ onMounted(() => {
           payload: game.gameState.value,
         });
       }
-
-      const payload = message.payload as { player: { name: string } };
       if (isGameInProgress) {
         chat.addSystemMessage(
           `${payload.player.name} 中途加入房间，将在下一局参与游戏`
@@ -247,11 +253,20 @@ onMounted(() => {
   // Handle player leave
   peer.onMessage("player-leave", (message, senderId) => {
     if (isHost) {
-      const player = gameStore.getPlayer(senderId);
-      if (player) {
-        chat.addSystemMessage(`${player.name} 离开了房间`);
-      }
+      // Get player name from mapping (set during player-join)
+      const playerName = senderPlayerNames.get(senderId) || '玩家';
+      senderPlayerNames.delete(senderId);
+      
+      // Add local system message
+      chat.addSystemMessage(`${playerName} 离开了房间`);
+      
       game.handleMessage(message, senderId);
+
+      // Broadcast player left notification to all players
+      peer.broadcast({
+        type: "player-left",
+        payload: { playerName },
+      });
 
       // Broadcast updated state
       if (game.gameState.value) {
@@ -260,6 +275,14 @@ onMounted(() => {
           payload: game.gameState.value,
         });
       }
+    }
+  });
+
+  // Handle player left notification (non-host)
+  peer.onMessage("player-left", (message) => {
+    if (!isHost) {
+      const { playerName } = message.payload as { playerName: string };
+      chat.addSystemMessage(`${playerName} 离开了房间`);
     }
   });
 
@@ -274,6 +297,10 @@ onMounted(() => {
   peer.onMessage("game-state", (message) => {
     if (!isHost) {
       const state = message.payload as GameState;
+      // Hide celebration when new hand starts
+      if (state.phase === 'preflop') {
+        showWinnerCelebration.value = false;
+      }
       game.updateState(state);
       gameStore.updateGameState(state);
     }
@@ -415,6 +442,9 @@ function startGame(): void {
 // Next hand (host only)
 function nextHand(): void {
   if (!isHost) return;
+
+  // Immediately hide celebration animation
+  showWinnerCelebration.value = false;
 
   const success = game.nextHand();
   if (success) {
@@ -589,6 +619,22 @@ let lastPhase: GamePhase | null = null;
 let lastRecordedAction: string | null = null;
 let lastWinnerKey: string | null = null;
 let handStartRecorded = false;
+
+// Watch for host disconnect (non-host players)
+const hostDisconnected = ref(false);
+watch(
+  () => peer.connectedPeers.value,
+  (connectedPeers, oldPeers) => {
+    // For non-host players, if connection to host is lost
+    if (!isHost && oldPeers && oldPeers.length > 0 && connectedPeers.length === 0) {
+      hostDisconnected.value = true;
+      // Auto redirect after 3 seconds
+      setTimeout(() => {
+        router.push('/');
+      }, 3000);
+    }
+  }
+);
 
 // Watch for phase changes to add system records
 watch(
@@ -1138,6 +1184,28 @@ watch(
       :phase="gameStore.phase"
       @close="showHelpModal = false"
     />
+
+    <!-- Host Disconnected Overlay -->
+    <Transition name="fade">
+      <div
+        v-if="hostDisconnected"
+        class="fixed inset-0 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-200"
+      >
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-8 text-center max-w-sm mx-4">
+          <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogOut class="w-8 h-8 text-red-400" />
+          </div>
+          <h2 class="text-xl font-bold text-white mb-2">房主已离开</h2>
+          <p class="text-gray-400 mb-4">房间已关闭，即将返回首页...</p>
+          <button
+            @click="router.push('/')"
+            class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          >
+            立即返回
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
