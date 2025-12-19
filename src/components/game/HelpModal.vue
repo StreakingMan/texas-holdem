@@ -377,38 +377,38 @@ const handSuggestions = computed(() => {
         
         <div class="relative bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl max-w-xl w-full overflow-hidden">
           <!-- Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-            <div class="flex items-center gap-2">
+          <div class="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-700">
+            <div class="flex items-center gap-1.5 sm:gap-2">
               <div 
-                class="w-8 h-8 rounded-lg flex items-center justify-center"
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center"
                 :class="type === 'hand-rankings' ? 'bg-purple-500/20' : 'bg-amber-500/20'"
               >
-                <Layers v-if="type === 'hand-rankings'" class="w-4 h-4 text-purple-400" />
-                <TrendingUp v-else class="w-4 h-4 text-amber-400" />
+                <Layers v-if="type === 'hand-rankings'" class="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
+                <TrendingUp v-else class="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" />
               </div>
-              <h2 class="text-base font-bold text-white">
-                {{ type === 'hand-rankings' ? (hasCards ? '牌型大小及中牌率' : '牌型大小') : '起手牌指南' }}
+              <h2 class="text-sm sm:text-base font-bold text-white">
+                {{ type === 'hand-rankings' ? (hasCards ? '牌型及中牌率' : '牌型大小') : '起手牌指南' }}
               </h2>
             </div>
             <button 
               @click="emit('close')"
-              class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              class="p-1 sm:p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
             >
               <X class="w-4 h-4" />
             </button>
           </div>
           
           <!-- Current Cards Display (if in game) -->
-          <div v-if="hasCards" class="px-4 py-3 bg-gray-800/50 border-b border-gray-700/50">
-            <div class="flex items-center gap-4">
+          <div v-if="hasCards" class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-800/50 border-b border-gray-700/50">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-4">
               <!-- Hole Cards -->
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500">手牌</span>
-                <div class="flex gap-1">
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <span class="text-[10px] sm:text-xs text-gray-500">手牌</span>
+                <div class="flex gap-0.5 sm:gap-1">
                   <span 
                     v-for="(card, i) in playerCards" 
                     :key="i"
-                    class="px-2 py-1 bg-white rounded text-sm font-bold shadow"
+                    class="px-1 sm:px-2 py-0.5 sm:py-1 bg-white rounded text-xs sm:text-sm font-bold shadow"
                     :class="suitColors[card.suit]"
                   >
                     {{ formatCard(card) }}
@@ -417,13 +417,13 @@ const handSuggestions = computed(() => {
               </div>
               
               <!-- Community Cards -->
-              <div v-if="hasCommunityCards" class="flex items-center gap-2">
-                <span class="text-xs text-gray-500">公共牌</span>
-                <div class="flex gap-1">
+              <div v-if="hasCommunityCards" class="flex items-center gap-1.5 sm:gap-2">
+                <span class="text-[10px] sm:text-xs text-gray-500">公共</span>
+                <div class="flex gap-0.5 sm:gap-1">
                   <span 
                     v-for="(card, i) in communityCards" 
                     :key="i"
-                    class="px-2 py-1 bg-white rounded text-sm font-bold shadow"
+                    class="px-1 sm:px-2 py-0.5 sm:py-1 bg-white rounded text-xs sm:text-sm font-bold shadow"
                     :class="suitColors[card.suit]"
                   >
                     {{ formatCard(card) }}
@@ -433,7 +433,7 @@ const handSuggestions = computed(() => {
               
               <!-- Phase -->
               <div v-if="phaseName" class="ml-auto">
-                <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded">
+                <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-xs rounded">
                   {{ phaseName }}
                 </span>
               </div>
@@ -441,29 +441,29 @@ const handSuggestions = computed(() => {
           </div>
           
           <!-- Dynamic Analysis for hand-rankings -->
-          <div v-if="hasCards && type === 'hand-rankings' && handSuggestions.length > 0" class="px-4 py-3 bg-purple-500/5 border-b border-purple-500/20">
-            <div class="flex items-start gap-3">
-              <Lightbulb class="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+          <div v-if="hasCards && type === 'hand-rankings' && handSuggestions.length > 0" class="px-3 sm:px-4 py-2 sm:py-3 bg-purple-500/5 border-b border-purple-500/20">
+            <div class="flex items-start gap-2 sm:gap-3">
+              <Lightbulb class="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 shrink-0 mt-0.5" />
               <div class="flex-1 min-w-0">
-                <p class="text-xs text-gray-400 mb-2">当前牌力分析:</p>
-                <div class="flex flex-col gap-1.5">
+                <p class="text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2">当前牌力:</p>
+                <div class="flex flex-col gap-1 sm:gap-1.5">
                   <div 
                     v-for="(suggestion, i) in handSuggestions" 
                     :key="i"
-                    class="flex items-center gap-2"
+                    class="flex flex-wrap items-center gap-1 sm:gap-2"
                   >
                     <div 
-                      class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs"
+                      class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs"
                       :class="suggestion.type === 'made' 
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                         : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'"
                     >
-                      <Check v-if="suggestion.type === 'made'" class="w-3 h-3" />
-                      <span v-else class="text-xs">{{ suggestion.outs }}outs</span>
+                      <Check v-if="suggestion.type === 'made'" class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      <span v-else>{{ suggestion.outs }}outs</span>
                       <span class="font-medium">{{ suggestion.name }}</span>
                       <span class="text-gray-400">{{ suggestion.probability }}%</span>
                     </div>
-                    <span class="text-xs text-gray-500">{{ suggestion.tip }}</span>
+                    <span class="text-[10px] sm:text-xs text-gray-500 hidden sm:inline">{{ suggestion.tip }}</span>
                   </div>
                 </div>
               </div>
@@ -471,46 +471,46 @@ const handSuggestions = computed(() => {
           </div>
 
           <!-- Dynamic Analysis for win-rate -->
-          <div v-if="hasCards && type === 'win-rate'" class="px-4 py-3 bg-amber-500/5 border-b border-amber-500/20">
+          <div v-if="hasCards && type === 'win-rate'" class="px-3 sm:px-4 py-2 sm:py-3 bg-amber-500/5 border-b border-amber-500/20">
             <!-- Starting Hand Analysis -->
-            <div v-if="handAnalysis" class="flex items-start gap-3">
-              <Lightbulb class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div v-if="handAnalysis" class="flex items-start gap-2 sm:gap-3">
+              <Lightbulb class="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 shrink-0 mt-0.5" />
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1">
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                   <span 
-                    class="px-1.5 py-0.5 rounded text-sm font-bold"
+                    class="px-1 sm:px-1.5 py-0.5 rounded text-xs sm:text-sm font-bold"
                     :class="getTierColor(handAnalysis.tier)"
                   >
                     {{ handAnalysis.tier }}级
                   </span>
-                  <span class="text-amber-400 font-medium text-sm">{{ handAnalysis.tierName }}</span>
-                  <span v-if="handAnalysis.isSuited" class="text-sm text-blue-400">同花</span>
-                  <span v-if="handAnalysis.connected" class="text-sm text-purple-400">连牌</span>
+                  <span class="text-amber-400 font-medium text-xs sm:text-sm">{{ handAnalysis.tierName }}</span>
+                  <span v-if="handAnalysis.isSuited" class="text-[10px] sm:text-sm text-blue-400">同花</span>
+                  <span v-if="handAnalysis.connected" class="text-[10px] sm:text-sm text-purple-400">连牌</span>
                 </div>
                 
                 <!-- Board Analysis -->
-                <div v-if="boardAnalysis" class="mt-2 pt-2 border-t border-gray-700/50">
-                  <div class="flex flex-wrap gap-1.5 mb-1.5">
+                <div v-if="boardAnalysis" class="mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-gray-700/50">
+                  <div class="flex flex-wrap gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
                     <span 
                       v-for="(result, i) in boardAnalysis.results" 
                       :key="i"
-                      class="px-2 py-0.5 bg-gray-800 rounded text-xs text-gray-300"
+                      class="px-1.5 sm:px-2 py-0.5 bg-gray-800 rounded text-[10px] sm:text-xs text-gray-300"
                     >
                       {{ result }}
                     </span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    <Sparkles class="w-3 h-3 inline text-amber-400 mr-1" />
+                  <p class="text-[10px] sm:text-xs text-gray-400">
+                    <Sparkles class="w-2.5 h-2.5 sm:w-3 sm:h-3 inline text-amber-400 mr-0.5 sm:mr-1" />
                     {{ boardAnalysis.advice }}
                   </p>
                 </div>
                 
                 <!-- Preflop advice -->
-                <p v-else class="text-xs text-gray-400">
+                <p v-else class="text-[10px] sm:text-xs text-gray-400">
                   {{ handAnalysis.tier === 'S' ? '顶级起手牌，建议加注！' :
-                     handAnalysis.tier === 'A' ? '优质起手牌，可以加注或跟注' :
-                     handAnalysis.tier === 'B' ? '不错的牌，看位置决定行动' :
-                     handAnalysis.tier === 'C' ? '投机牌，便宜看牌或弃牌' :
+                     handAnalysis.tier === 'A' ? '优质牌，可加注或跟注' :
+                     handAnalysis.tier === 'B' ? '不错的牌，看位置决定' :
+                     handAnalysis.tier === 'C' ? '投机牌，便宜看牌' :
                      '弱牌，建议弃牌' }}
                 </p>
               </div>
@@ -518,20 +518,20 @@ const handSuggestions = computed(() => {
           </div>
           
           <!-- Content -->
-          <div class="p-3 overflow-y-auto max-h-[50vh]">
-            <!-- Hand Rankings (2-column with pie chart) -->
-            <div v-if="type === 'hand-rankings'" class="grid grid-cols-2 gap-1.5">
+          <div class="p-2 sm:p-3 overflow-y-auto max-h-[50vh]">
+            <!-- Hand Rankings (single column on mobile, 2-column on desktop) -->
+            <div v-if="type === 'hand-rankings'" class="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-1.5">
               <div 
                 v-for="hand in handRankings"
                 :key="hand.rank"
-                class="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all"
+                class="flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg transition-all"
                 :class="currentHandRank === hand.rank 
                   ? 'bg-amber-500/20 ring-2 ring-amber-400/60 shadow-lg shadow-amber-500/20' 
                   : 'bg-gray-800/50'"
               >
                 <!-- Rank badge -->
                 <div 
-                  class="w-5 h-5 rounded bg-linear-to-br flex items-center justify-center text-white font-bold text-xs shrink-0"
+                  class="w-4 h-4 sm:w-5 sm:h-5 rounded bg-linear-to-br flex items-center justify-center text-white font-bold text-[10px] sm:text-xs shrink-0"
                   :class="hand.color"
                 >
                   {{ hand.rank }}
@@ -540,25 +540,24 @@ const handSuggestions = computed(() => {
                 <!-- Name, desc and example -->
                 <div class="flex-1 min-w-0 overflow-hidden">
                   <div class="flex items-center gap-1">
-                    <span class="text-sm font-medium" :class="currentHandRank === hand.rank ? 'text-amber-400' : 'text-white'">{{ hand.name }}</span>
-                    <span v-if="currentHandRank === hand.rank" class="px-1 py-0.5 bg-amber-500 text-gray-900 text-[11px] font-bold rounded">当前</span>
-                    <span v-else class="text-gray-500 text-xs">{{ hand.desc }}</span>
+                    <span class="text-xs sm:text-sm font-medium" :class="currentHandRank === hand.rank ? 'text-amber-400' : 'text-white'">{{ hand.name }}</span>
+                    <span v-if="currentHandRank === hand.rank" class="px-1 py-0.5 bg-amber-500 text-gray-900 text-[9px] sm:text-[11px] font-bold rounded">当前</span>
+                    <span v-else class="text-gray-500 text-[10px] sm:text-xs">{{ hand.desc }}</span>
                   </div>
-                  <div class="flex flex-wrap gap-0.5">
+                  <div class="flex flex-wrap gap-0.5 text-[10px] sm:text-xs font-mono">
                     <span 
                       v-for="(card, i) in hand.example.split(' ')"
                       :key="i"
-                      class="text-xs font-mono"
                       :class="card.includes('♥') || card.includes('♦') ? 'text-red-400' : 'text-gray-400'"
                     >{{ card }}</span>
                   </div>
                 </div>
                 
                 <!-- Live probability (when in game) or text probability (when not) -->
-                <div class="flex flex-col items-center shrink-0 ml-auto" :class="hasCards ? 'w-10' : 'w-16'">
+                <div class="flex flex-col items-center shrink-0 ml-auto" :class="hasCards ? 'w-8 sm:w-10' : 'w-12 sm:w-16'">
                   <!-- In game: Show pie chart with live probability -->
                   <template v-if="hasCards">
-                    <svg width="24" height="24" viewBox="0 0 24 24" class="transform -rotate-90">
+                    <svg width="20" height="20" viewBox="0 0 24 24" class="transform -rotate-90 w-5 h-5 sm:w-6 sm:h-6">
                       <circle 
                         cx="12" cy="12" r="10" 
                         fill="none" 
@@ -576,7 +575,7 @@ const handSuggestions = computed(() => {
                       />
                     </svg>
                     <span 
-                      class="text-[11px] font-mono mt-0.5 text-center"
+                      class="text-[9px] sm:text-[11px] font-mono mt-0.5 text-center"
                       :class="(liveHandProbabilities[hand.rank] || 0) >= 80 ? 'text-amber-400' : 
                               (liveHandProbabilities[hand.rank] || 0) >= 20 ? 'text-emerald-400' : 'text-gray-500'"
                     >{{ (liveHandProbabilities[hand.rank] || 0).toFixed(0) }}%</span>
@@ -584,7 +583,7 @@ const handSuggestions = computed(() => {
                   <!-- Not in game: Show text probability -->
                   <template v-else>
                     <span 
-                      class="text-[11px] text-right leading-tight"
+                      class="text-[9px] sm:text-[11px] text-right leading-tight"
                       :class="hand.rarity >= 4 ? 'text-amber-400' : hand.rarity >= 3 ? 'text-purple-400' : 'text-gray-500'"
                     >{{ formatProbText(hand.prob) }}</span>
                   </template>
@@ -592,34 +591,34 @@ const handSuggestions = computed(() => {
               </div>
             </div>
             
-            <!-- Win Rates (2-column layout) -->
-            <div v-else class="space-y-2">
-              <!-- 2-column grid -->
-              <div class="grid grid-cols-2 gap-1.5">
+            <!-- Win Rates (single column on mobile, 2-column on desktop) -->
+            <div v-else class="space-y-1.5 sm:space-y-2">
+              <!-- Grid layout -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-1.5">
                 <div 
                   v-for="(item, index) in handTiers"
                   :key="index"
-                  class="flex items-center gap-2 px-2 py-1.5 bg-gray-800/50 rounded-lg"
+                  class="flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 sm:py-1.5 bg-gray-800/50 rounded-lg"
                 >
                   <span 
-                    class="w-5 h-5 rounded flex items-center justify-center font-bold text-xs shrink-0"
+                    class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center font-bold text-[10px] sm:text-xs shrink-0"
                     :class="getTierColor(item.tier)"
                   >
                     {{ item.tier }}
                   </span>
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="text-white text-sm font-mono">{{ item.hands }}</span>
-                      <span class="text-emerald-400 text-xs font-medium ml-auto">{{ item.winRate }}</span>
+                    <div class="flex items-center gap-1.5 sm:gap-2">
+                      <span class="text-white text-xs sm:text-sm font-mono">{{ item.hands }}</span>
+                      <span class="text-emerald-400 text-[10px] sm:text-xs font-medium ml-auto">{{ item.winRate }}</span>
                     </div>
-                    <div class="text-gray-500 text-xs truncate">{{ item.desc }}</div>
+                    <div class="text-gray-500 text-[10px] sm:text-xs truncate">{{ item.desc }}</div>
                   </div>
                 </div>
               </div>
               
               <!-- Quick legend -->
-              <div class="px-2 py-2 bg-gray-800/30 rounded-lg text-xs text-gray-500">
-                s = 同花 | o = 杂色 | 胜率基于1v1单挑场景
+              <div class="px-1.5 sm:px-2 py-1.5 sm:py-2 bg-gray-800/30 rounded-lg text-[10px] sm:text-xs text-gray-500">
+                s=同花 o=杂色 | 基于1v1单挑
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { Player, Card as CardType, WinnerInfo, PlayerAction, GamePhase } from '@/core/types'
 import PlayerSeat, { type BubbleMessage } from './PlayerSeat.vue'
 import Card from './Card.vue'
@@ -48,9 +48,25 @@ function handleTip(playerId: string, amount: number) {
   emit('tip', playerId, amount)
 }
 
-// Calculate seat positions around the table
-// Layout: 4 corners + bottom center (self) + left/right middle + top 2
-const seatPositions = [
+// Responsive breakpoint detection
+const isMobile = ref(false)
+const MOBILE_BREAKPOINT = 768
+
+function checkMobile() {
+  isMobile.value = window.innerWidth < MOBILE_BREAKPOINT
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
+
+// Desktop seat positions (horizontal ellipse layout)
+const desktopSeatPositions = [
   { x: 50, y: 92 },   // Seat 0 - Bottom center (self)
   { x: 12, y: 78 },   // Seat 1 - Bottom left corner
   { x: 3,  y: 45 },   // Seat 2 - Left middle
@@ -61,6 +77,25 @@ const seatPositions = [
   { x: 97, y: 45 },   // Seat 7 - Right middle
   { x: 88, y: 78 },   // Seat 8 - Bottom right corner
 ]
+
+// Mobile seat positions (vertical layout)
+// Bottom: 1 (self), Left: 3 (moved up), Top: 2, Right: 3 (moved up)
+const mobileSeatPositions = [
+  { x: 50, y: 92 },   // Seat 0 - Bottom center (self)
+  { x: 12, y: 62 },   // Seat 1 - Left bottom (moved up)
+  { x: 8,  y: 40 },   // Seat 2 - Left middle (moved up)
+  { x: 12, y: 18 },   // Seat 3 - Left top (moved up)
+  { x: 30, y: 6 },    // Seat 4 - Top left
+  { x: 70, y: 6 },    // Seat 5 - Top right
+  { x: 88, y: 18 },   // Seat 6 - Right top (moved up)
+  { x: 92, y: 40 },   // Seat 7 - Right middle (moved up)
+  { x: 88, y: 62 },   // Seat 8 - Right bottom (moved up)
+]
+
+// Use computed to switch between layouts
+const seatPositions = computed(() => 
+  isMobile.value ? mobileSeatPositions : desktopSeatPositions
+)
 
 // Reorder players so local player is at position 0
 const orderedPlayers = computed(() => {
@@ -92,7 +127,7 @@ function getWinAmount(playerId: string): number | undefined {
 
 // Get display position for a seat
 function getPosition(index: number): { x: number; y: number } {
-  return seatPositions[index] || { x: 50, y: 50 }
+  return seatPositions.value[index] || { x: 50, y: 50 }
 }
 
 // Show cards in showdown
@@ -153,14 +188,16 @@ function getPlayerDisplayIndex(playerId: string): number {
 const flyingTips = computed(() => {
   if (!props.tipEffects || props.tipEffects.length === 0) return []
   
+  const positions = seatPositions.value
+  
   return props.tipEffects.map(effect => {
     const fromIndex = getPlayerDisplayIndex(effect.fromPlayerId)
     const toIndex = getPlayerDisplayIndex(effect.toPlayerId)
     
     if (fromIndex === -1 || toIndex === -1) return null
     
-    const fromPos = seatPositions[fromIndex]
-    const toPos = seatPositions[toIndex]
+    const fromPos = positions[fromIndex]
+    const toPos = positions[toIndex]
     
     if (!fromPos || !toPos) return null
     
@@ -176,13 +213,14 @@ const flyingTips = computed(() => {
 </script>
 
 <template>
-  <div class="relative w-full h-full flex flex-col items-center justify-center px-8">
-    <!-- Table background -->
+  <div class="relative w-full h-full flex flex-col items-center px-2 sm:px-4 md:px-8 md:justify-center">
+    <!-- Table background - Desktop (horizontal) -->
     <div 
-      class="relative w-full max-w-5xl aspect-16/10 felt-texture rounded-[100px] border-8 border-amber-900/80 shadow-2xl"
+      v-if="!isMobile"
+      class="relative w-full max-w-5xl aspect-16/10 felt-texture rounded-[60px] md:rounded-[100px] border-6 md:border-8 border-amber-900/80 shadow-2xl"
     >
       <!-- Table inner border -->
-      <div class="absolute inset-4 rounded-[80px] border-4 border-amber-700/30"></div>
+      <div class="absolute inset-3 md:inset-4 rounded-[50px] md:rounded-[80px] border-3 md:border-4 border-amber-700/30"></div>
 
       <!-- Player seats -->
       <PlayerSeat
@@ -233,9 +271,9 @@ const flyingTips = computed(() => {
         </div>
       </TransitionGroup>
 
-      <!-- Center area (pot + community cards) - offset up by 150px -->
+      <!-- Center area (pot + community cards) - Desktop offset -->
       <div 
-        class="absolute left-1/2 top-1/2 transform -translate-x-1/2 flex flex-col items-center gap-4 z-0"
+        class="absolute left-1/2 top-1/2 transform -translate-x-1/2 flex flex-col items-center gap-3 md:gap-4 z-0"
         style="margin-top: -150px;"
       >
         <!-- Pot display with game status -->
@@ -252,7 +290,7 @@ const flyingTips = computed(() => {
         <!-- Community cards (always show 5 slots) -->
         <div 
           v-if="phase !== 'waiting'"
-          class="flex gap-2 p-3 bg-gray-900/40 backdrop-blur rounded-xl"
+          class="flex gap-1.5 md:gap-2 p-2 md:p-3 bg-gray-900/40 backdrop-blur rounded-xl"
         >
           <template v-for="i in 5" :key="i">
             <!-- Show actual card if available -->
@@ -263,25 +301,135 @@ const flyingTips = computed(() => {
               :animation-delay="(i - 1) * 150"
               class="deal-animation"
             />
-            <!-- Show placeholder for empty slots -->
+            <!-- Show placeholder for empty slots - responsive size -->
             <div 
               v-else
-              class="w-14 h-20 rounded-lg border-2 border-dashed border-gray-600/50"
+              class="card-placeholder rounded-lg border-2 border-dashed border-gray-600/50"
             ></div>
           </template>
         </div>
+      </div>
+    </div>
 
+    <!-- Table background - Mobile (vertical, fill height but leave space for action panel) -->
+    <div 
+      v-else
+      class="relative w-full flex-1 min-h-0 max-h-[calc(100%-80px)] my-1 felt-texture rounded-[30px] border-4 border-amber-900/80 shadow-2xl"
+    >
+      <!-- Table inner border -->
+      <div class="absolute inset-2 rounded-[22px] border-2 border-amber-700/30"></div>
+
+      <!-- Player seats -->
+      <PlayerSeat
+        v-for="(player, index) in orderedPlayers"
+        :key="index"
+        :player="player"
+        :position="getPosition(index)"
+        :is-local="player?.id === localPlayerId"
+        :show-cards="showAllCards"
+        :is-winner="player ? isWinner(player.id) : false"
+        :win-amount="player ? getWinAmount(player.id) : undefined"
+        :latest-message="player ? getPlayerBubble(player.id) : null"
+        :last-action="player ? getPlayerLastAction(player.id) : null"
+        :local-player-chips="localPlayerChips"
+        :community-cards="communityCards"
+        :phase="phase"
+        :tip-effect="player ? getPlayerTipEffect(player.id) : null"
+        @tip="handleTip"
+        @open-hand-rankings="emit('openHandRankings')"
+      />
+
+      <!-- Flying tip coins animation -->
+      <TransitionGroup name="tip-fly">
+        <div
+          v-for="(tip, index) in flyingTips"
+          :key="`tip-${tip.fromPlayerId}-${tip.toPlayerId}-${index}`"
+          class="absolute inset-0 pointer-events-none z-[100]"
+          :style="{
+            '--from-x': `${tip.fromX}%`,
+            '--from-y': `${tip.fromY}%`,
+            '--to-x': `${tip.toX}%`,
+            '--to-y': `${tip.toY}%`,
+          }"
+        >
+          <!-- Multiple coins for effect -->
+          <div 
+            v-for="i in 5" 
+            :key="i" 
+            class="flying-coin"
+            :style="{ '--delay': `${i * 80}ms`, '--offset': `${(i - 3) * 8}px` }"
+          >
+            <Coins class="w-5 h-5 text-amber-400 drop-shadow-lg" />
+          </div>
+          <!-- Amount label -->
+          <div class="tip-amount-label text-xs">
+            +${{ tip.amount }}
+          </div>
+        </div>
+      </TransitionGroup>
+
+      <!-- Center area (pot + community cards) - Mobile centered -->
+      <div 
+        class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-0"
+      >
+        <!-- Pot display with game status -->
+        <PotDisplay 
+          :amount="pot" 
+          :phase="phase"
+          :current-player-id="currentPlayerId"
+          :players="players"
+          :winners="winners"
+          :last-action="potLastAction"
+          :is-host="isHost"
+        />
+
+        <!-- Community cards (always show 5 slots) - Mobile uses smaller cards -->
+        <div 
+          v-if="phase !== 'waiting'"
+          class="flex gap-1 p-1.5 bg-gray-900/40 backdrop-blur rounded-lg"
+        >
+          <template v-for="i in 5" :key="i">
+            <!-- Show actual card if available -->
+            <Card
+              v-if="communityCards[i - 1]"
+              :card="communityCards[i - 1] ?? null"
+              size="sm"
+              :animation-delay="(i - 1) * 150"
+              class="deal-animation"
+            />
+            <!-- Show placeholder for empty slots -->
+            <div 
+              v-else
+              class="card-placeholder-sm rounded border-2 border-dashed border-gray-600/50"
+            ></div>
+          </template>
+        </div>
       </div>
     </div>
     
     <!-- Slot for action panel below table -->
-    <div class="shrink-0 mt-6 relative z-50">
+    <div 
+      class="shrink-0 mt-2 md:mt-6 relative z-50 w-full max-w-md mx-auto px-2 md:px-0"
+      style="padding-bottom: var(--safe-area-bottom, 0px);"
+    >
       <slot name="action-panel"></slot>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Desktop card placeholder */
+.card-placeholder {
+  width: var(--card-width-md, 56px);
+  height: var(--card-height-md, 80px);
+}
+
+/* Mobile card placeholder (smaller) - matches card-sm */
+.card-placeholder-sm {
+  width: var(--card-width-sm, 40px);
+  height: var(--card-height-sm, 56px);
+}
+
 @keyframes deal {
   0% {
     transform: translateY(-50px) rotateY(180deg);

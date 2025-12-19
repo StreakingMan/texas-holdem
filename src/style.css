@@ -15,6 +15,91 @@
   --font-body: "Inter", system-ui, sans-serif;
 }
 
+/* ===== RESPONSIVE CSS VARIABLES ===== */
+:root {
+  /* Card sizes - Desktop */
+  --card-width-sm: 40px;
+  --card-height-sm: 56px;
+  --card-width-md: 56px;
+  --card-height-md: 80px;
+  --card-width-lg: 80px;
+  --card-height-lg: 112px;
+  
+  /* Avatar and seat sizes */
+  --avatar-size: 40px;
+  --seat-padding: 8px;
+  --chip-scale: 1;
+  
+  /* Font sizes */
+  --seat-font-name: 12px;
+  --seat-font-chips: 11px;
+  --pot-font: 14px;
+}
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  :root {
+    --card-width-sm: 36px;
+    --card-height-sm: 50px;
+    --card-width-md: 48px;
+    --card-height-md: 68px;
+    --card-width-lg: 64px;
+    --card-height-lg: 90px;
+    --avatar-size: 36px;
+    --chip-scale: 0.9;
+  }
+}
+
+/* Mobile landscape / Small tablet (640px - 768px) */
+@media (max-width: 768px) {
+  :root {
+    --card-width-sm: 32px;
+    --card-height-sm: 44px;
+    --card-width-md: 40px;
+    --card-height-md: 56px;
+    --card-width-lg: 56px;
+    --card-height-lg: 78px;
+    --avatar-size: 32px;
+    --seat-padding: 6px;
+    --chip-scale: 0.8;
+    --seat-font-name: 11px;
+    --seat-font-chips: 10px;
+    --pot-font: 12px;
+  }
+}
+
+/* Mobile portrait (< 640px) */
+@media (max-width: 640px) {
+  :root {
+    --card-width-sm: 28px;
+    --card-height-sm: 38px;
+    --card-width-md: 34px;
+    --card-height-md: 48px;
+    --card-width-lg: 48px;
+    --card-height-lg: 66px;
+    --avatar-size: 28px;
+    --seat-padding: 4px;
+    --chip-scale: 0.7;
+    --seat-font-name: 10px;
+    --seat-font-chips: 9px;
+    --pot-font: 11px;
+  }
+}
+
+/* ===== MOBILE VIEWPORT FIX ===== */
+/* Fix for mobile browsers where 100vh includes address bar */
+:root {
+  --vh: 1vh; /* Will be overwritten by JavaScript */
+  --app-height: 100vh; /* Fallback */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-height: 100dvh; /* Use dynamic viewport height if supported */
+  }
+}
+
 /* Base styles */
 html,
 body,
@@ -23,6 +108,7 @@ body,
   padding: 0;
   width: 100%;
   height: 100%;
+  height: var(--app-height, 100vh);
   overflow: hidden;
 }
 
@@ -416,4 +502,70 @@ button:not(:disabled) {
 .neon-text {
   text-shadow: 0 0 5px currentColor, 0 0 10px currentColor,
     0 0 20px currentColor;
+}
+
+/* ===== RESPONSIVE SEAT STYLES ===== */
+
+/* Empty seat */
+.seat-empty {
+  width: 80px;
+  height: 80px;
+}
+
+/* Avatar sizing */
+.seat-avatar {
+  width: var(--avatar-size, 40px);
+  height: var(--avatar-size, 40px);
+}
+
+.seat-avatar-icon {
+  width: calc(var(--avatar-size, 40px) * 0.6);
+  height: calc(var(--avatar-size, 40px) * 0.6);
+}
+
+/* Seat container */
+.seat-padding {
+  padding: var(--seat-padding, 8px);
+}
+
+.seat-min-w {
+  min-width: 90px;
+}
+
+/* Text sizes */
+.seat-text-sm {
+  font-size: var(--seat-font-name, 12px);
+}
+
+.seat-text-lg {
+  font-size: calc(var(--avatar-size, 40px) * 0.4);
+}
+
+.seat-text-name {
+  font-size: var(--seat-font-name, 12px);
+}
+
+.seat-text-chips {
+  font-size: var(--seat-font-chips, 11px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .seat-empty {
+    width: 60px;
+    height: 60px;
+  }
+  .seat-min-w {
+    min-width: 75px;
+  }
+}
+
+@media (max-width: 640px) {
+  .seat-empty {
+    width: 50px;
+    height: 50px;
+  }
+  .seat-min-w {
+    min-width: 65px;
+  }
 }

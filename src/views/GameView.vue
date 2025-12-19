@@ -32,6 +32,10 @@ import {
   Coins,
   Plus,
   Github,
+  MessageCircle,
+  History,
+  X,
+  Menu,
 } from "lucide-vue-next";
 
 const route = useRoute();
@@ -86,6 +90,19 @@ function addChipsToAll(amount: number) {
 const historyPanelHeight = ref(40); // percentage
 const isResizing = ref(false);
 const sidebarRef = ref<HTMLElement | null>(null);
+
+// Mobile drawer state
+const showMobileDrawer = ref(false);
+const mobileDrawerTab = ref<'chat' | 'history'>('chat');
+
+function openMobileDrawer(tab: 'chat' | 'history') {
+  mobileDrawerTab.value = tab;
+  showMobileDrawer.value = true;
+}
+
+function closeMobileDrawer() {
+  showMobileDrawer.value = false;
+}
 
 function startResize(e: MouseEvent) {
   isResizing.value = true;
@@ -867,16 +884,17 @@ watch(
 
 <template>
   <div
-    class="h-screen w-screen flex flex-col overflow-hidden bg-linear-to-br from-gray-900 via-emerald-950 to-gray-900"
+    class="w-screen flex flex-col overflow-hidden bg-linear-to-br from-gray-900 via-emerald-950 to-gray-900"
+    style="height: var(--app-height, 100vh);"
   >
     <!-- Top bar -->
     <header
-      class="shrink-0 h-14 bg-gray-900/80 backdrop-blur border-b border-gray-700/50 flex items-center justify-between px-4 overflow-visible z-20"
+      class="shrink-0 h-12 sm:h-14 bg-gray-900/80 backdrop-blur border-b border-gray-700/50 flex items-center justify-between px-2 sm:px-4 overflow-visible z-20"
     >
-      <div class="flex items-center gap-3 overflow-visible">
-        <!-- Logo -->
+      <div class="flex items-center gap-1.5 sm:gap-3 overflow-visible">
+        <!-- Logo - hidden on mobile -->
         <h1
-          class="text-xl font-semibold text-amber-400 hidden sm:flex items-center tracking-wide"
+          class="text-xl font-semibold text-amber-400 hidden md:flex items-center tracking-wide"
           style="font-family: var(--font-display)"
         >
           德州扑克教学
@@ -884,12 +902,12 @@ watch(
 
         <!-- Room info card -->
         <div
-          class="flex items-center gap-3 px-3 py-1.5 bg-gray-800/80 rounded-lg"
+          class="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-800/80 rounded-lg"
         >
           <!-- Room ID -->
-          <div class="flex items-center gap-1.5">
-            <span class="text-gray-500 text-xs">房间</span>
-            <span class="text-amber-400 font-mono font-bold text-sm">{{
+          <div class="flex items-center gap-1 sm:gap-1.5">
+            <span class="text-gray-500 text-[10px] sm:text-xs hidden sm:inline">房间</span>
+            <span class="text-amber-400 font-mono font-bold text-xs sm:text-sm">{{
               roomId
             }}</span>
             <button
@@ -897,103 +915,105 @@ watch(
               class="p-0.5 hover:bg-gray-700 rounded transition-colors"
               :title="copied ? '已复制' : '复制'"
             >
-              <Check v-if="copied" class="w-3.5 h-3.5 text-emerald-400" />
-              <Copy v-else class="w-3.5 h-3.5 text-gray-400" />
+              <Check v-if="copied" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+              <Copy v-else class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400" />
             </button>
           </div>
 
-          <div class="w-px h-4 bg-gray-700"></div>
+          <div class="w-px h-3 sm:h-4 bg-gray-700 hidden sm:block"></div>
 
           <!-- Players count -->
-          <div class="flex items-center gap-1 text-gray-400 text-sm">
-            <Users class="w-3.5 h-3.5" />
+          <div class="flex items-center gap-1 text-gray-400 text-xs sm:text-sm">
+            <Users class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>{{ gameStore.players.length }}/9</span>
           </div>
 
-          <div class="w-px h-4 bg-gray-700"></div>
-
-          <!-- Starting chips -->
-          <div class="flex items-center gap-1.5 relative">
-            <Coins class="w-3.5 h-3.5 text-emerald-400" />
-            <span class="text-emerald-400 text-sm font-medium"
-              >${{
-                (gameStore.settings?.startingChips ?? 1000).toLocaleString()
-              }}</span
-            >
-
-            <!-- Add chips button (host only) -->
-            <button
-              v-if="isHost"
-              @click="toggleAddChipsPopover"
-              class="p-0.5 hover:bg-emerald-500/20 text-emerald-400 rounded transition-colors ml-0.5"
-              title="增发筹码"
-            >
-              <Plus class="w-3.5 h-3.5" />
-            </button>
-
-            <!-- Add chips popover -->
-            <Transition name="fade">
-              <div
-                v-if="showAddChipsPopover"
-                class="absolute top-full left-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg p-2.5 shadow-xl z-50 min-w-[120px]"
-                @click.stop
+          <!-- Starting chips - hidden on small mobile -->
+          <div class="hidden sm:flex items-center">
+            <div class="w-px h-4 bg-gray-700 mr-2 sm:mr-3"></div>
+            <div class="flex items-center gap-1.5 relative">
+              <Coins class="w-3.5 h-3.5 text-emerald-400" />
+              <span class="text-emerald-400 text-sm font-medium"
+                >${{
+                  (gameStore.settings?.startingChips ?? 1000).toLocaleString()
+                }}</span
               >
-                <p class="text-gray-500 text-xs mb-2">全员增发</p>
-                <div class="flex flex-col gap-1">
-                  <button
-                    v-for="amount in addChipsPresets"
-                    :key="amount"
-                    @click="addChipsToAll(amount)"
-                    class="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-sm rounded transition-colors text-left"
-                  >
-                    +${{ amount.toLocaleString() }}
-                  </button>
+
+              <!-- Add chips button (host only) -->
+              <button
+                v-if="isHost"
+                @click="toggleAddChipsPopover"
+                class="p-0.5 hover:bg-emerald-500/20 text-emerald-400 rounded transition-colors ml-0.5"
+                title="增发筹码"
+              >
+                <Plus class="w-3.5 h-3.5" />
+              </button>
+
+              <!-- Add chips popover -->
+              <Transition name="fade">
+                <div
+                  v-if="showAddChipsPopover"
+                  class="absolute top-full left-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg p-2.5 shadow-xl z-50 min-w-[120px]"
+                  @click.stop
+                >
+                  <p class="text-gray-500 text-xs mb-2">全员增发</p>
+                  <div class="flex flex-col gap-1">
+                    <button
+                      v-for="amount in addChipsPresets"
+                      :key="amount"
+                      @click="addChipsToAll(amount)"
+                      class="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-sm rounded transition-colors text-left"
+                    >
+                      +${{ amount.toLocaleString() }}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Transition>
+              </Transition>
+            </div>
           </div>
         </div>
 
-        <!-- Help buttons (icon + text) -->
-        <div class="flex items-center gap-2">
+        <!-- Help buttons -->
+        <div class="flex items-center gap-1 sm:gap-2">
           <button
             @click="openHelpModal('win-rate')"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30"
+            class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30"
             title="起手胜率"
           >
-            <TrendingUp class="w-3.5 h-3.5" />
-            <span class="text-xs font-medium">胜率</span>
+            <TrendingUp class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span class="text-[10px] sm:text-xs font-medium">胜率</span>
           </button>
           <button
             @click="openHelpModal('hand-rankings')"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors border border-purple-500/30"
+            class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors border border-purple-500/30"
             title="牌型大小"
           >
-            <Layers class="w-3.5 h-3.5" />
-            <span class="text-xs font-medium">牌型</span>
+            <Layers class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span class="text-[10px] sm:text-xs font-medium">牌型</span>
           </button>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 sm:gap-3">
         <button
           v-if="canStartGame"
           @click="startGame"
-          class="px-4 py-2 bg-linear-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-lg shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2"
+          class="px-2 sm:px-4 py-1.5 sm:py-2 bg-linear-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-xs sm:text-sm font-medium rounded-lg shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-1 sm:gap-2"
         >
-          <Play class="w-4 h-4" />
-          开始游戏
+          <Play class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span class="hidden xs:inline">开始游戏</span>
+          <span class="xs:hidden">开始</span>
         </button>
         <!-- Next hand button with error state -->
         <div v-if="showNextHandButton" class="relative group">
           <button
             @click="nextHand"
             :disabled="!!nextHandError"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30 disabled:text-gray-500 disabled:border-gray-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+            class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30 disabled:text-gray-500 disabled:border-gray-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
             title="下一局"
           >
-            <Play class="w-3.5 h-3.5" />
-            <span class="text-xs font-medium">下一局</span>
+            <Play class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span class="text-[10px] sm:text-xs font-medium hidden xs:inline">下一局</span>
           </button>
           <!-- Error tooltip -->
           <div
@@ -1009,18 +1029,18 @@ watch(
 
         <button
           @click="leaveRoom"
-          class="flex items-center gap-1.5 px-2.5 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/30"
+          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/30"
           title="离开房间"
         >
-          <LogOut class="w-3.5 h-3.5" />
-          <span class="text-xs font-medium">离开房间</span>
+          <LogOut class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <span class="text-[10px] sm:text-xs font-medium hidden xs:inline">离开</span>
         </button>
 
         <a
           href="https://github.com/StreakingMan/texas-holdem"
           target="_blank"
           rel="noopener noreferrer"
-          class="p-2 text-gray-500 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          class="hidden sm:flex p-2 text-gray-500 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           title="GitHub"
         >
           <Github class="w-4 h-4" />
@@ -1165,10 +1185,10 @@ watch(
         </Transition>
       </div>
 
-      <!-- Side panel (history on top, chat on bottom) -->
+      <!-- Side panel (history on top, chat on bottom) - Hidden on mobile -->
       <aside
         ref="sidebarRef"
-        class="w-80 bg-gray-900/80 backdrop-blur border-l border-gray-700/50 flex flex-col"
+        class="hidden md:flex w-80 bg-gray-900/80 backdrop-blur border-l border-gray-700/50 flex-col"
       >
         <!-- Action history (top) -->
         <div
@@ -1208,6 +1228,90 @@ watch(
           />
         </div>
       </aside>
+
+      <!-- Mobile floating buttons (show on mobile when game started) -->
+      <div 
+        v-if="gameStore.isGameStarted && !showLobby"
+        class="md:hidden fixed bottom-20 right-2 flex flex-col gap-1.5 z-40"
+      >
+        <!-- Chat button -->
+        <button
+          @click="openMobileDrawer('chat')"
+          class="w-10 h-10 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105"
+        >
+          <MessageCircle class="w-4 h-4" />
+        </button>
+        <!-- History button -->
+        <button
+          @click="openMobileDrawer('history')"
+          class="w-10 h-10 bg-purple-600 hover:bg-purple-500 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105"
+        >
+          <History class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Mobile drawer -->
+      <Transition name="drawer">
+        <div
+          v-if="showMobileDrawer"
+          class="md:hidden fixed inset-0 z-50"
+        >
+          <!-- Backdrop -->
+          <div 
+            class="absolute inset-0 bg-black/60" 
+            @click="closeMobileDrawer"
+          ></div>
+          
+          <!-- Drawer panel -->
+          <div class="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-gray-900 border-l border-gray-700/50 flex flex-col">
+            <!-- Drawer header -->
+            <div class="flex items-center justify-between p-3 border-b border-gray-700/50">
+              <div class="flex gap-2">
+                <button
+                  @click="mobileDrawerTab = 'chat'"
+                  class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  :class="mobileDrawerTab === 'chat' 
+                    ? 'bg-emerald-500/20 text-emerald-400' 
+                    : 'text-gray-400 hover:text-white'"
+                >
+                  <MessageCircle class="w-4 h-4 inline mr-1" />
+                  聊天
+                </button>
+                <button
+                  @click="mobileDrawerTab = 'history'"
+                  class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  :class="mobileDrawerTab === 'history' 
+                    ? 'bg-purple-500/20 text-purple-400' 
+                    : 'text-gray-400 hover:text-white'"
+                >
+                  <History class="w-4 h-4 inline mr-1" />
+                  记录
+                </button>
+              </div>
+              <button
+                @click="closeMobileDrawer"
+                class="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X class="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            
+            <!-- Drawer content -->
+            <div class="flex-1 overflow-hidden">
+              <ChatBox
+                v-if="mobileDrawerTab === 'chat'"
+                :messages="chat.messages.value"
+                :local-player-id="playerStore.playerId"
+                @send="sendChatMessage"
+              />
+              <ActionHistory
+                v-else
+                :records="gameStore.actionHistory"
+              />
+            </div>
+          </div>
+        </div>
+      </Transition>
     </main>
 
     <!-- Help Modal -->
@@ -1412,5 +1516,26 @@ watch(
     box-shadow: 0 0 60px rgba(251, 191, 36, 0.7),
       0 0 100px rgba(251, 191, 36, 0.5), inset 0 0 30px rgba(251, 191, 36, 0.2);
   }
+}
+
+/* Mobile drawer transitions */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.drawer-enter-active > div:last-child,
+.drawer-leave-active > div:last-child {
+  transition: transform 0.3s ease;
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  opacity: 0;
+}
+
+.drawer-enter-from > div:last-child,
+.drawer-leave-to > div:last-child {
+  transform: translateX(100%);
 }
 </style>

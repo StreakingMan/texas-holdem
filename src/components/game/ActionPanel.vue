@@ -87,12 +87,12 @@ function setQuickRaise(amount: number): void {
 
 <template>
   <!-- Action panel (fixed height container to prevent layout shift) -->
-  <div class="z-30 h-[72px] flex items-center justify-center relative">
+  <div class="z-30 h-[60px] sm:h-[72px] flex items-center justify-center relative w-full">
     <!-- Raise slider bubble (outside action panel for proper backdrop blur) -->
     <Transition name="slide-up">
       <div 
         v-if="isMyTurn && showRaiseSlider && canDo('raise')"
-        class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-80 z-[100]"
+        class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 sm:mb-3 w-[calc(100%-16px)] sm:w-80 max-w-80 z-[100]"
       >
         <div class="bg-gray-900/80 backdrop-blur-2xl backdrop-saturate-150 rounded-xl p-3 border border-white/20 shadow-2xl relative">
           <!-- Close button -->
@@ -153,13 +153,13 @@ function setQuickRaise(amount: number): void {
     <!-- Game ended - Host can start next hand -->
     <div 
       v-if="!isMyTurn && isHost && isGameEnded" 
-      class="bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-2xl shadow-xl px-6 py-3"
+      class="bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-xl sm:rounded-2xl shadow-xl px-4 sm:px-6 py-2 sm:py-3"
     >
       <button
         @click="emit('nextHand')"
-        class="flex items-center gap-2 px-6 py-2.5 bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-medium rounded-xl shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
+        class="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
       >
-        <Play class="w-5 h-5" />
+        <Play class="w-4 h-4 sm:w-5 sm:h-5" />
         开始下一局
       </button>
     </div>
@@ -167,10 +167,10 @@ function setQuickRaise(amount: number): void {
     <!-- Waiting indicator (compact) -->
     <div 
       v-else-if="!isMyTurn" 
-      class="bg-gray-900/90 backdrop-blur-md border border-gray-700/50 rounded-full px-5 py-2.5 shadow-xl"
+      class="bg-gray-900/90 backdrop-blur-md border border-gray-700/50 rounded-full px-3 sm:px-5 py-2 sm:py-2.5 shadow-xl"
     >
-      <span class="inline-flex items-center gap-2 text-gray-400 text-sm">
-        <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></span>
+      <span class="inline-flex items-center gap-1.5 sm:gap-2 text-gray-400 text-xs sm:text-sm">
+        <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-500 rounded-full animate-pulse"></span>
         {{ isGameEnded ? '等待房主开始下一局...' : '等待其他玩家操作...' }}
       </span>
     </div>
@@ -178,64 +178,66 @@ function setQuickRaise(amount: number): void {
     <!-- Action panel (your turn) -->
     <div 
       v-else
-      class="bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-2xl shadow-2xl shadow-black/50 p-4 min-w-[500px]"
+      class="bg-gray-900/90 backdrop-blur-md border border-amber-500/30 rounded-xl sm:rounded-2xl shadow-2xl shadow-black/50 p-2 sm:p-4 w-full sm:w-auto sm:min-w-[500px]"
     >
       <!-- Main actions row -->
-      <div class="flex items-center justify-center gap-2">
+      <div class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
         <!-- Fold -->
         <button
           v-if="canDo('fold')"
           @click="fold"
-          class="flex items-center gap-1.5 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl transition-all hover:scale-105 whitespace-nowrap"
+          class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-gray-700 hover:bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl transition-all hover:scale-105 whitespace-nowrap"
         >
-          <X class="w-4 h-4 text-red-400 shrink-0" />
-          弃牌
+          <X class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400 shrink-0" />
+          <span class="hidden xs:inline">弃牌</span>
+          <span class="xs:hidden">弃</span>
         </button>
 
         <!-- Check -->
         <button
           v-if="canDo('check')"
           @click="check"
-          class="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 whitespace-nowrap"
+          class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 whitespace-nowrap"
         >
-          <Check class="w-4 h-4 shrink-0" />
-          过牌
+          <Check class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span class="hidden xs:inline">过牌</span>
+          <span class="xs:hidden">过</span>
         </button>
 
         <!-- Call -->
         <button
           v-if="canDo('call')"
           @click="call"
-          class="flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-105 whitespace-nowrap"
+          class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-105 whitespace-nowrap"
         >
-          <Coins class="w-4 h-4 shrink-0" />
-          跟注 ${{ callAmount }}
+          <Coins class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span class="hidden xs:inline">跟注</span> ${{ callAmount }}
         </button>
 
         <!-- Raise -->
         <button
           v-if="canDo('raise')"
           @click="raise"
-          class="flex items-center gap-1.5 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl shadow-lg shadow-amber-500/30 transition-all hover:scale-105 whitespace-nowrap"
+          class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl shadow-lg shadow-amber-500/30 transition-all hover:scale-105 whitespace-nowrap"
           :class="{ 'ring-2 ring-amber-400': showRaiseSlider }"
         >
-          <ArrowUp class="w-4 h-4 shrink-0" />
-          {{ showRaiseSlider ? `确认 $${raiseAmount}` : '加注' }}
+          <ArrowUp class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          {{ showRaiseSlider ? `$${raiseAmount}` : '加注' }}
         </button>
 
         <!-- All-in -->
         <button
           v-if="canDo('all-in')"
           @click="allIn"
-          class="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 transition-all hover:scale-105 whitespace-nowrap"
+          class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl shadow-lg shadow-red-500/30 transition-all hover:scale-105 whitespace-nowrap"
         >
-          <Coins class="w-4 h-4 shrink-0" />
-          ALL IN ${{ playerChips }}
+          <Coins class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span class="hidden sm:inline">ALL IN</span> ${{ playerChips }}
         </button>
       </div>
 
-      <!-- Player info -->
-      <div class="flex items-center justify-center gap-4 mt-3 text-xs text-gray-400">
+      <!-- Player info - hidden on mobile for space -->
+      <div class="hidden sm:flex items-center justify-center gap-4 mt-3 text-xs text-gray-400">
         <span>筹码 <span class="text-emerald-400 font-medium">${{ playerChips.toLocaleString() }}</span></span>
         <span>•</span>
         <span>当前注 <span class="text-amber-400 font-medium">${{ currentBet }}</span></span>

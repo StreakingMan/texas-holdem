@@ -69,18 +69,17 @@ const winnerInfo = computed(() => {
   }
 })
 
-// Combined status text (single line)
+// Combined status text (single line, shortened for mobile)
 const statusText = computed(() => {
   // Waiting phase
   if (props.phase === 'waiting') {
-    return props.isHost ? '点击"开始游戏"开始' : '等待房主开始游戏'
+    return props.isHost ? '点击开始' : '等待开始'
   }
   
   // Ended phase with winner
   if ((props.phase === 'ended' || props.phase === 'showdown') && winnerInfo.value) {
     const handText = winnerInfo.value.hand ? `(${winnerInfo.value.hand})` : ''
-    const waitText = props.isHost ? '点击下一局继续' : '等待房主开始下一局'
-    return `${winnerInfo.value.name} 胜出 ${handText}，${waitText}`
+    return `${winnerInfo.value.name}胜${handText}`
   }
   
   // Active game - combine last action and current thinking player
@@ -88,11 +87,14 @@ const statusText = computed(() => {
   
   if (props.lastAction) {
     const { playerName, action, amount } = props.lastAction
-    parts.push(`${playerName} ${formatAction(action, amount)}`)
+    // Shorten player name if too long
+    const shortName = playerName.length > 4 ? playerName.slice(0, 4) + '..' : playerName
+    parts.push(`${shortName} ${formatAction(action, amount)}`)
   }
   
   if (thinkingPlayer.value) {
-    parts.push(`${thinkingPlayer.value.name} 思考中...`)
+    const shortName = thinkingPlayer.value.name.length > 4 ? thinkingPlayer.value.name.slice(0, 4) + '..' : thinkingPlayer.value.name
+    parts.push(`${shortName} 思考中`)
   }
   
   return parts.length > 0 ? parts.join('，') : null
@@ -100,14 +102,14 @@ const statusText = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-2">
-    <!-- Phase indicator with status (single line) -->
-    <div class="px-4 py-2 bg-gray-900/80 backdrop-blur rounded-xl text-sm">
-      <div class="flex items-center justify-center gap-2 text-center">
-        <span class="text-gray-400">{{ phaseNames[phase] || phase }}</span>
+  <div class="flex flex-col items-center gap-1.5 sm:gap-2">
+    <!-- Phase indicator with status -->
+    <div class="px-2 sm:px-4 py-1 sm:py-2 bg-gray-900/80 backdrop-blur rounded-lg sm:rounded-xl text-[10px] sm:text-sm max-w-[280px] sm:max-w-none">
+      <div class="flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-center">
+        <span class="text-gray-400 font-medium">{{ phaseNames[phase] || phase }}</span>
         <template v-if="statusText">
-          <span class="text-gray-600">|</span>
-          <span class="text-gray-300">{{ statusText }}</span>
+          <span class="text-gray-600 hidden sm:inline">|</span>
+          <span class="text-gray-300 truncate">{{ statusText }}</span>
         </template>
       </div>
     </div>
@@ -115,11 +117,11 @@ const statusText = computed(() => {
     <!-- Pot display -->
     <div 
       v-if="amount > 0"
-      class="flex flex-col items-center gap-1 bg-gray-900/60 backdrop-blur rounded-xl px-4 py-2 border border-amber-500/30"
+      class="flex flex-col items-center gap-0.5 sm:gap-1 bg-gray-900/60 backdrop-blur rounded-lg sm:rounded-xl px-2 sm:px-4 py-1 sm:py-2 border border-amber-500/30"
     >
-      <div class="flex items-center gap-2 text-amber-400">
-        <Coins class="w-5 h-5" />
-        <span class="text-sm font-medium">底池</span>
+      <div class="flex items-center gap-1 sm:gap-2 text-amber-400">
+        <Coins class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+        <span class="text-[10px] sm:text-sm font-medium">底池</span>
       </div>
       <ChipStack :amount="amount" size="md" />
     </div>

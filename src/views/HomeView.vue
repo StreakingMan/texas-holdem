@@ -94,7 +94,7 @@ async function joinRoom(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <div class="flex items-center justify-center p-3 sm:p-4 relative overflow-hidden" style="min-height: var(--app-height, 100vh);">
     <!-- Animated background -->
     <div class="absolute inset-0 overflow-hidden">
       <div class="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-emerald-900/20 to-transparent rounded-full blur-3xl animate-pulse"></div>
@@ -104,12 +104,12 @@ async function joinRoom(): Promise<void> {
     <!-- Main card -->
     <div class="relative z-10 w-full max-w-md">
       <!-- Logo section -->
-      <div class="text-center mb-8">
-        <img src="/favicon.svg" alt="德州扑克" class="w-24 h-24 mx-auto mb-4 drop-shadow-2xl" />
-        <h1 class="text-4xl font-bold text-white mb-2" style="font-family: var(--font-display)">
+      <div class="text-center mb-4 sm:mb-8">
+        <img src="/favicon.svg" alt="德州扑克" class="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 drop-shadow-2xl" />
+        <h1 class="text-3xl sm:text-4xl font-bold text-white mb-1 sm:mb-2" style="font-family: var(--font-display)">
           德州扑克
         </h1>
-        <p class="text-emerald-400/80 text-sm mb-3">交互式模拟教学演示 • 多人在线</p>
+        <p class="text-emerald-400/80 text-xs sm:text-sm mb-2 sm:mb-3">交互式模拟教学演示 • 多人在线</p>
         <a 
           href="https://github.com/StreakingMan/texas-holdem"
           target="_blank"
@@ -122,11 +122,11 @@ async function joinRoom(): Promise<void> {
       </div>
 
       <!-- Card container -->
-      <div class="bg-gradient-to-b from-gray-800/80 to-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
+      <div class="bg-gradient-to-b from-gray-800/80 to-gray-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
         <!-- Header decoration -->
         <div class="h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500"></div>
 
-        <div class="p-6 space-y-6">
+        <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
           <!-- Joining via link hint -->
           <div v-if="joiningViaLink" class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
             <p class="text-amber-400 text-sm text-center">
@@ -164,9 +164,9 @@ async function joinRoom(): Promise<void> {
             v-if="joiningViaLink"
             @click="joinRoom"
             :disabled="isJoining"
-            class="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full py-3 sm:py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LogIn class="w-5 h-5" />
+            <LogIn class="w-4 h-4 sm:w-5 sm:h-5" />
             {{ isJoining ? '加入中...' : '立即加入游戏' }}
           </button>
 
@@ -175,9 +175,9 @@ async function joinRoom(): Promise<void> {
             v-if="!joiningViaLink"
             @click="createRoom"
             :disabled="isCreating"
-            class="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full py-3 sm:py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus class="w-5 h-5" />
+            <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
             {{ isCreating ? '创建中...' : '创建房间' }}
           </button>
 
@@ -209,9 +209,9 @@ async function joinRoom(): Promise<void> {
             <button
               @click="joinRoom"
               :disabled="isJoining"
-              class="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full py-3 sm:py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <LogIn class="w-5 h-5" />
+              <LogIn class="w-4 h-4 sm:w-5 sm:h-5" />
               {{ isJoining ? '加入中...' : '加入房间' }}
             </button>
           </div>
@@ -233,21 +233,21 @@ async function joinRoom(): Promise<void> {
         </div>
 
         <!-- Footer -->
-        <div class="px-6 py-4 bg-gray-900/50 border-t border-gray-700/50">
-          <p class="text-center text-gray-500 text-xs">
+        <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-900/50 border-t border-gray-700/50">
+          <p class="text-center text-gray-500 text-[10px] sm:text-xs">
             使用 WebRTC 技术 • 点对点连接 • 无需服务器
           </p>
         </div>
       </div>
 
       <!-- Version info -->
-      <p class="text-center text-gray-600 text-xs mt-4">
+      <p class="text-center text-gray-600 text-[10px] sm:text-xs mt-3 sm:mt-4">
         v1.0.0 • Made with ♥
       </p>
       
       <!-- Disclaimer -->
-      <div class="mt-6 p-3 bg-gray-900/50 border border-gray-700/30 rounded-lg max-w-md">
-        <p class="text-gray-500 text-xs text-center leading-relaxed">
+      <div class="mt-4 sm:mt-6 p-2.5 sm:p-3 bg-gray-900/50 border border-gray-700/30 rounded-lg">
+        <p class="text-gray-500 text-[10px] sm:text-xs text-center leading-relaxed">
           ⚠️ 本项目为德州扑克规则<span class="text-amber-500/80">教学演示工具</span>，仅供学习交流。
           所有筹码均为虚拟，无任何实际价值，不支持充值、提现或兑换。
           <span class="text-red-400/80">赌博违法，请遵守当地法律法规。</span>

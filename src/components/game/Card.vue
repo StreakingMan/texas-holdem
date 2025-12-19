@@ -11,14 +11,15 @@ const props = defineProps<{
   animationDelay?: number
 }>()
 
+// Use CSS variable-based sizing for responsiveness
 const sizeClasses = computed(() => {
   switch (props.size) {
     case 'sm':
-      return 'w-10 h-14 text-sm'
+      return 'card-sm text-sm'
     case 'lg':
-      return 'w-20 h-28 text-2xl'
+      return 'card-lg text-2xl'
     default:
-      return 'w-14 h-20 text-lg'
+      return 'card-md text-lg'
   }
 })
 
@@ -104,6 +105,20 @@ const isUnknown = computed(() =>
 </template>
 
 <style scoped>
+/* Responsive card sizes using CSS variables */
+.card-sm {
+  width: var(--card-width-sm, 40px);
+  height: var(--card-height-sm, 56px);
+}
+.card-md {
+  width: var(--card-width-md, 56px);
+  height: var(--card-height-md, 80px);
+}
+.card-lg {
+  width: var(--card-width-lg, 80px);
+  height: var(--card-height-lg, 112px);
+}
+
 @keyframes deal {
   0% {
     transform: translateY(-100px) scale(0.5);

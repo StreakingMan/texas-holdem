@@ -3,7 +3,7 @@ import { computed, ref, watch, onUnmounted } from 'vue'
 import type { Player, PlayerAction, Card as CardType, GamePhase } from '@/core/types'
 import Card from './Card.vue'
 import ChipStack from './ChipStack.vue'
-import { Crown, Timer, Wifi, WifiOff, Gift, X, Check, Droplet, Link } from 'lucide-vue-next'
+import { Crown, Timer, Wifi, WifiOff, Gift, Check, Droplet, Link } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
 import { analyzeHand, analyzeStartingHand } from '@/core/hand-odds'
 
@@ -48,24 +48,14 @@ const showRaiseEffect = ref(false)
 const showAllInEffect = ref(false)
 let actionEffectTimer: ReturnType<typeof setTimeout> | null = null
 
-// Tip state
-const showTipPopover = ref(false)
-const customTipAmount = ref(50)
-const tipPresets = [10, 50, 100]
+// Direct tip - same amount for both mobile and desktop
+const DIRECT_TIP_AMOUNT = 10
 
-function toggleTipPopover() {
-  showTipPopover.value = !showTipPopover.value
-}
-
-function sendTip(amount: number) {
-  if (props.player && amount > 0 && (props.localPlayerChips ?? 0) >= amount) {
-    emit('tip', props.player.id, amount)
-    showTipPopover.value = false
+function handleTipClick() {
+  if (props.player && (props.localPlayerChips ?? 0) >= DIRECT_TIP_AMOUNT) {
+    emit('tip', props.player.id, DIRECT_TIP_AMOUNT)
   }
 }
-
-// Can afford tip check
-const canAffordTip = (amount: number) => (props.localPlayerChips ?? 0) >= amount
 
 // Watch for new messages
 watch(
@@ -198,9 +188,9 @@ function getTierColor(tier: string): string {
     <!-- Empty seat -->
     <div 
       v-if="!player"
-      class="w-20 h-20 rounded-full bg-gray-800/50 border-2 border-dashed border-gray-600 flex items-center justify-center"
+      class="seat-empty rounded-full bg-gray-800/50 border-2 border-dashed border-gray-600 flex items-center justify-center"
     >
-      <span class="text-gray-500 text-sm">空座</span>
+      <span class="text-gray-500 seat-text-sm">空座</span>
     </div>
 
     <!-- Player seat -->
@@ -293,51 +283,51 @@ function getTierColor(tier: string): string {
           />
         </div>
         
-        <!-- Hand hints (only for local player) - absolute positioned to the right of cards -->
+        <!-- Hand hints (only for local player) - show on all screen sizes -->
         <Transition name="hint-fade">
           <div 
             v-if="isLocal && hasHints && displayCards.length > 0 && !player.folded"
-            class="absolute left-full top-0 ml-2 flex flex-col gap-1.5 bg-gray-900/90 backdrop-blur rounded-lg px-2 py-1.5 border border-gray-700/50 shadow-lg min-w-[100px] max-w-[160px]"
+            class="flex absolute left-full top-0 ml-1 sm:ml-2 flex-col gap-1 sm:gap-1.5 bg-gray-900/90 backdrop-blur rounded-lg px-1.5 sm:px-2 py-1 sm:py-1.5 border border-gray-700/50 shadow-lg min-w-[80px] sm:min-w-[100px] max-w-[120px] sm:max-w-[160px]"
           >
             <!-- Preflop: Starting hand tier -->
             <div v-if="startingHandInfo" class="flex flex-col gap-0.5">
-              <span class="text-[10px] text-gray-500 font-medium">起手牌力</span>
-              <div class="flex items-center gap-1.5">
+              <span class="text-[9px] sm:text-[10px] text-gray-500 font-medium">起手牌力</span>
+              <div class="flex items-center gap-1 sm:gap-1.5">
                 <span 
-                  class="px-1 py-0.5 rounded text-xs font-bold"
+                  class="px-1 py-0.5 rounded text-[10px] sm:text-xs font-bold"
                   :class="getTierColor(startingHandInfo.tier)"
                 >
                   {{ startingHandInfo.tier }}
                 </span>
-                <span class="text-gray-300 text-xs">{{ startingHandInfo.name }}</span>
+                <span class="text-gray-300 text-[10px] sm:text-xs truncate">{{ startingHandInfo.name }}</span>
               </div>
-              <span class="text-[11px] text-gray-500 truncate">{{ startingHandInfo.tip }}</span>
+              <span class="hidden sm:block text-[11px] text-gray-500 truncate">{{ startingHandInfo.tip }}</span>
             </div>
             
             <!-- Post-flop: Hand odds -->
             <div v-if="handOddsInfo && handOddsInfo.length > 0" class="flex flex-col gap-0.5">
-              <span class="text-[10px] text-gray-500 font-medium">中牌概率</span>
+              <span class="text-[9px] sm:text-[10px] text-gray-500 font-medium">中牌概率</span>
               <div 
                 v-for="(suggestion, i) in handOddsInfo" 
                 :key="i"
-                class="flex items-center gap-1"
+                class="flex items-center gap-0.5 sm:gap-1"
                 :title="suggestion.tip"
               >
-                <Check v-if="suggestion.type === 'made'" class="w-3 h-3 text-emerald-400 shrink-0" />
-                <Droplet v-else-if="suggestion.icon === 'droplet' || suggestion.icon === 'droplets'" class="w-3 h-3 text-blue-400 shrink-0" />
-                <Link v-else class="w-3 h-3 text-purple-400 shrink-0" />
+                <Check v-if="suggestion.type === 'made'" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 shrink-0" />
+                <Droplet v-else-if="suggestion.icon === 'droplet' || suggestion.icon === 'droplets'" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-400 shrink-0" />
+                <Link v-else class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-400 shrink-0" />
                 <span 
-                  class="text-xs font-medium truncate"
+                  class="text-[10px] sm:text-xs font-medium truncate"
                   :class="suggestion.type === 'made' ? 'text-emerald-400' : 'text-gray-300'"
                 >
                   {{ suggestion.name }}
                 </span>
-                <span class="text-[11px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
+                <span class="text-[9px] sm:text-[11px] text-gray-500 ml-auto whitespace-nowrap">{{ suggestion.probability }}%</span>
               </div>
               <!-- View more button -->
               <button 
                 @click="emit('openHandRankings')"
-                class="mt-1 text-[10px] text-amber-400 hover:text-amber-300 text-center transition-colors"
+                class="mt-0.5 sm:mt-1 text-[9px] sm:text-[10px] text-amber-400 hover:text-amber-300 text-center transition-colors"
               >
                 查看更多 →
               </button>
@@ -348,7 +338,7 @@ function getTierColor(tier: string): string {
 
       <!-- Avatar and info -->
       <div 
-        class="relative bg-gray-800/90 rounded-xl p-2 min-w-[100px] backdrop-blur transition-all duration-300"
+        class="relative bg-gray-800/90 rounded-xl seat-padding seat-min-w backdrop-blur transition-all duration-300"
         :class="[
           player.isTurn 
             ? 'border-2 border-amber-400/80 shadow-lg shadow-amber-500/40' 
@@ -397,87 +387,28 @@ function getTierColor(tier: string): string {
           <WifiOff v-else class="w-3 h-3 text-red-400" />
         </div>
 
-        <!-- Tip button (for non-local players) -->
+        <!-- Tip button (for non-local players) - mobile: direct $10 tip, desktop: show popover -->
         <button
           v-if="!isLocal && player.isConnected"
-          @click.stop="toggleTipPopover"
-          class="absolute -bottom-3 -right-3 w-6 h-6 bg-pink-500 hover:bg-pink-400 text-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
-          title="打赏"
+          @click.stop="handleTipClick"
+          class="flex absolute -bottom-3 -right-3 w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 hover:bg-pink-400 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
+          title="打赏 $10"
         >
-          <Gift class="w-3 h-3" />
+          <Gift class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
         </button>
 
-        <!-- Tip popover -->
-        <Transition name="tip-popover">
-          <div
-            v-if="showTipPopover && !isLocal"
-            class="absolute -right-2 top-full mt-2 bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-xl z-30 min-w-[160px]"
-            @click.stop
-          >
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-white text-sm font-medium">💰 打赏</span>
-              <button @click="showTipPopover = false" class="text-gray-400 hover:text-white">
-                <X class="w-4 h-4" />
-              </button>
-            </div>
-            
-            <!-- Preset amounts -->
-            <div class="flex gap-2 mb-2">
-              <button
-                v-for="amount in tipPresets"
-                :key="amount"
-                @click="sendTip(amount)"
-                :disabled="!canAffordTip(amount)"
-                class="px-2 py-1 rounded text-sm font-medium transition-all"
-                :class="canAffordTip(amount) 
-                  ? 'bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 border border-pink-500/30' 
-                  : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'"
-              >
-                ${{ amount }}
-              </button>
-            </div>
-            
-            <!-- Custom amount -->
-            <div class="flex gap-2">
-              <input
-                v-model.number="customTipAmount"
-                type="number"
-                min="1"
-                :max="localPlayerChips"
-                class="flex-1 bg-gray-700 text-white text-sm px-2 py-1 rounded border border-gray-600 focus:border-pink-500 focus:outline-none w-16"
-                placeholder="金额"
-              />
-              <button
-                @click="sendTip(customTipAmount)"
-                :disabled="!canAffordTip(customTipAmount) || customTipAmount <= 0"
-                class="px-3 py-1 rounded text-sm font-medium transition-all"
-                :class="canAffordTip(customTipAmount) && customTipAmount > 0
-                  ? 'bg-pink-500 text-white hover:bg-pink-400' 
-                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'"
-              >
-                送
-              </button>
-            </div>
-            
-            <!-- Balance hint -->
-            <p class="text-gray-500 text-xs mt-2 text-center">
-              余额: ${{ (localPlayerChips ?? 0).toLocaleString() }}
-            </p>
-          </div>
-        </Transition>
-
-        <!-- Player avatar -->
-        <div class="flex items-center gap-2">
+        <!-- Player avatar and info -->
+        <div class="flex items-center gap-1 sm:gap-2">
           <div 
-            class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center shrink-0"
+            class="seat-avatar rounded-full bg-gray-700 flex items-center justify-center shrink-0"
           >
             <component 
               v-if="player.avatar && getAvatarById(player.avatar)"
               :is="getAvatarById(player.avatar)!.icon"
-              class="w-6 h-6"
+              class="seat-avatar-icon"
               :class="getAvatarById(player.avatar)!.color"
             />
-            <span v-else class="text-white font-bold text-lg">
+            <span v-else class="text-white font-bold seat-text-lg">
               {{ player.name.charAt(0).toUpperCase() }}
             </span>
           </div>
@@ -485,15 +416,15 @@ function getTierColor(tier: string): string {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1">
               <span 
-                class="text-white text-sm font-medium truncate max-w-[60px]"
+                class="text-white seat-text-name font-medium truncate max-w-[50px] sm:max-w-[60px]"
                 :class="{ 'text-amber-400': isLocal }"
               >
                 {{ player.name }}
               </span>
-              <Crown v-if="isLocal" class="w-3 h-3 text-amber-400 shrink-0" />
+              <Crown v-if="isLocal" class="w-3 h-3 text-amber-400 shrink-0 hidden sm:block" />
             </div>
             
-            <div class="text-emerald-400 text-xs font-mono">
+            <div class="text-emerald-400 seat-text-chips font-mono">
               ${{ player.chips.toLocaleString() }}
             </div>
           </div>
@@ -539,7 +470,7 @@ function getTierColor(tier: string): string {
       <div 
         v-if="player.bet > 0 && !player.folded" 
         class="absolute left-1/2 -translate-x-1/2"
-        :class="position.y > 50 ? '-top-10' : 'top-full mt-1'"
+        :class="position.y > 50 ? '-top-6' : 'top-full'"
       >
         <ChipStack :amount="player.bet" size="sm" />
       </div>
@@ -564,25 +495,15 @@ function getTierColor(tier: string): string {
         </div>
       </Transition>
 
-      <!-- Tip receiving effect (shows glow + amount + sparkles) -->
+      <!-- Tip receiving effect (amount badge only) -->
       <Transition name="tip-receive">
         <div 
           v-if="tipEffect?.type === 'receiving'"
           class="absolute inset-0 pointer-events-none z-30"
         >
-          <!-- Glow ring effect -->
-          <div class="absolute inset-0 rounded-full tip-glow-ring"></div>
-          <!-- Sparkle effect -->
-          <div class="tip-sparkles">
-            <div v-for="i in 8" :key="i" class="tip-sparkle" :style="`--i: ${i}`">✨</div>
-          </div>
           <!-- Amount badge -->
           <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500/90 text-white px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap shadow-lg shadow-emerald-500/50 tip-badge-in">
             +${{ tipEffect.amount }}
-          </div>
-          <!-- Thank you message -->
-          <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 text-pink-400 text-sm font-medium whitespace-nowrap tip-thanks">
-            💖 谢谢打赏!
           </div>
         </div>
       </Transition>
@@ -861,35 +782,6 @@ function getTierColor(tier: string): string {
   }
 }
 
-/* ========== TIP POPOVER ========== */
-.tip-popover-enter-active {
-  animation: tip-popover-in 0.2s ease-out;
-}
-.tip-popover-leave-active {
-  animation: tip-popover-out 0.15s ease-in;
-}
-
-@keyframes tip-popover-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes tip-popover-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.95);
-  }
-}
 
 /* ========== HAND HINTS ========== */
 .hint-fade-enter-active {
@@ -961,31 +853,6 @@ function getTierColor(tier: string): string {
   to { opacity: 0; }
 }
 
-/* Glow ring effect for receiving */
-.tip-glow-ring {
-  border: 3px solid transparent;
-  animation: tip-glow-pulse 1s ease-out infinite;
-  box-shadow: 
-    0 0 20px rgba(16, 185, 129, 0.6),
-    0 0 40px rgba(16, 185, 129, 0.4),
-    inset 0 0 20px rgba(16, 185, 129, 0.2);
-}
-
-@keyframes tip-glow-pulse {
-  0%, 100% {
-    box-shadow: 
-      0 0 20px rgba(16, 185, 129, 0.6),
-      0 0 40px rgba(16, 185, 129, 0.4),
-      inset 0 0 20px rgba(16, 185, 129, 0.2);
-  }
-  50% {
-    box-shadow: 
-      0 0 30px rgba(16, 185, 129, 0.8),
-      0 0 60px rgba(16, 185, 129, 0.5),
-      inset 0 0 30px rgba(16, 185, 129, 0.3);
-  }
-}
-
 /* Receiving badge animation */
 .tip-badge-in {
   animation: tip-badge-bounce-in 0.5s ease-out;
@@ -995,64 +862,6 @@ function getTierColor(tier: string): string {
   0% { transform: scale(0); }
   60% { transform: scale(1.3); }
   100% { transform: scale(1); }
-}
-
-/* Sparkles for receiving */
-.tip-sparkles {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.tip-sparkle {
-  position: absolute;
-  font-size: 1rem;
-  animation: tip-sparkle-burst 1.2s ease-out forwards;
-  animation-delay: calc(var(--i) * 0.08s);
-}
-
-@keyframes tip-sparkle-burst {
-  0% {
-    transform: translate(0, 0) scale(0);
-    opacity: 0;
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  100% {
-    transform: translate(
-      calc(cos(calc(var(--i) * 45deg)) * 45px),
-      calc(sin(calc(var(--i) * 45deg)) * 45px)
-    ) scale(0);
-    opacity: 0;
-  }
-}
-
-/* Thanks message animation */
-.tip-thanks {
-  animation: tip-thanks 1.5s ease-out forwards;
-  animation-delay: 0.3s;
-  opacity: 0;
-}
-
-@keyframes tip-thanks {
-  0% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
-  }
-  30% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  70% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
-  }
 }
 </style>
 
