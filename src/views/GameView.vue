@@ -35,7 +35,6 @@ import {
   MessageCircle,
   History,
   X,
-  Menu,
 } from "lucide-vue-next";
 
 const route = useRoute();
