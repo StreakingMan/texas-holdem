@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import type { ChatMessage } from '@/core/types'
-import { Send, MessageCircle } from 'lucide-vue-next'
+import { Send, MessageCircle, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
 
 const props = defineProps<{
@@ -15,6 +15,51 @@ const emit = defineEmits<{
 
 const inputMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
+const showAllPhrases = ref(false)
+
+// 德州扑克场景快捷短语
+const quickPhrases = [
+  // 第一排（默认显示，常用的放前面）
+  { emoji: '👍', text: 'Nice hand!' },
+  { emoji: '😎', text: '稳如老狗' },
+  { emoji: '🔥', text: '手气火热中' },
+  { emoji: '🤔', text: '让我想想...' },
+  { emoji: '😱', text: '这都能中？' },
+  { emoji: '🙏', text: '求放过' },
+  { emoji: '⏰', text: '快点啊兄弟' },
+  
+  // 更多短语
+  { emoji: '🃏', text: 'All in 不解释' },
+  { emoji: '💪', text: '这把我罩的' },
+  { emoji: '🥺', text: '大哥行行好' },
+  { emoji: '😭', text: '我只是个菜鸡' },
+  { emoji: '💸', text: '筹码在燃烧' },
+  { emoji: '🤡', text: '演技太差了' },
+  { emoji: '🎭', text: '你在演我？' },
+  { emoji: '🧐', text: '这牌有故事' },
+  { emoji: '🤯', text: '河杀了！' },
+  { emoji: '✨', text: '打得漂亮' },
+  { emoji: '😴', text: '等到我睡着' },
+  { emoji: '🍀', text: '求好运！' },
+  { emoji: '👋', text: 'gg，下把再来' },
+  { emoji: '🎰', text: '赌一把！' },
+  { emoji: '💀', text: '完蛋了' },
+  { emoji: '🐟', text: '大鱼上钩' },
+  { emoji: '🦈', text: '小心鲨鱼' },
+  { emoji: '🤑', text: '数钱中...' },
+]
+
+// 默认显示的数量
+const defaultVisibleCount = 7
+
+// 默认显示的短语
+const visiblePhrases = computed(() => 
+  showAllPhrases.value ? quickPhrases : quickPhrases.slice(0, defaultVisibleCount)
+)
+
+function sendQuickPhrase(phrase: { emoji: string; text: string }) {
+  emit('send', `${phrase.emoji} ${phrase.text}`)
+}
 
 // Auto-scroll to bottom when new messages arrive
 watch(() => props.messages.length, () => {
@@ -149,8 +194,40 @@ function isOwnMessage(message: ChatMessage): boolean {
       </div>
     </div>
 
+    <!-- Quick phrases bar -->
+    <div class="flex-shrink-0 px-4 py-2 border-t border-gray-700/50">
+      <div 
+        class="flex flex-wrap items-center gap-1"
+        :class="{ 'max-h-8 overflow-hidden': !showAllPhrases }"
+      >
+        <!-- Emoji buttons -->
+        <button
+          v-for="(phrase, index) in visiblePhrases"
+          :key="index"
+          @click="sendQuickPhrase(phrase)"
+          class="group relative w-8 h-8 flex items-center justify-center hover:bg-gray-700/50 rounded-lg transition-colors text-lg"
+        >
+          {{ phrase.emoji }}
+          <!-- Tooltip -->
+          <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-gray-700">
+            {{ phrase.text }}
+          </span>
+        </button>
+
+        <!-- More/Less button -->
+        <button
+          @click="showAllPhrases = !showAllPhrases"
+          class="h-8 px-2 flex items-center gap-0.5 text-xs text-gray-400 hover:text-emerald-400 hover:bg-gray-700/50 rounded-lg transition-colors"
+        >
+          <span>{{ showAllPhrases ? '收起' : '更多' }}</span>
+          <ChevronUp v-if="showAllPhrases" class="w-3 h-3" />
+          <ChevronDown v-else class="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+
     <!-- Input area -->
-    <div class="flex-shrink-0 p-4 border-t border-gray-700/50">
+    <div class="flex-shrink-0 px-4 pb-4 pt-2">
       <form @submit.prevent="sendMessage" class="flex gap-2">
         <input
           v-model="inputMessage"
