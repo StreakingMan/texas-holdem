@@ -31,11 +31,16 @@ const props = defineProps<{
   lastAction?: LastActionInfo | null
   isHost?: boolean
   tipEffects?: TipEffect[]
+  // 回合计时相关
+  turnStartTime?: number
+  turnTimeLimit?: number
+  hasUsedExtension?: boolean
 }>()
 
 const emit = defineEmits<{
   tip: [playerId: string, amount: number]
   openHandRankings: []
+  requestExtension: []
 }>()
 
 // Local player chips for tip validation
@@ -238,8 +243,12 @@ const flyingTips = computed(() => {
         :community-cards="communityCards"
         :phase="phase"
         :tip-effect="player ? getPlayerTipEffect(player.id) : null"
+        :turn-start-time="player?.isTurn ? turnStartTime : undefined"
+        :turn-time-limit="player?.isTurn ? turnTimeLimit : undefined"
+        :has-used-extension="player?.isTurn ? hasUsedExtension : false"
         @tip="handleTip"
         @open-hand-rankings="emit('openHandRankings')"
+        @request-extension="emit('requestExtension')"
       />
 
       <!-- Flying tip coins animation -->
@@ -335,8 +344,12 @@ const flyingTips = computed(() => {
         :community-cards="communityCards"
         :phase="phase"
         :tip-effect="player ? getPlayerTipEffect(player.id) : null"
+        :turn-start-time="player?.isTurn ? turnStartTime : undefined"
+        :turn-time-limit="player?.isTurn ? turnTimeLimit : undefined"
+        :has-used-extension="player?.isTurn ? hasUsedExtension : false"
         @tip="handleTip"
         @open-hand-rankings="emit('openHandRankings')"
+        @request-extension="emit('requestExtension')"
       />
 
       <!-- Flying tip coins animation -->
@@ -409,7 +422,7 @@ const flyingTips = computed(() => {
     
     <!-- Slot for action panel below table -->
     <div 
-      class="shrink-0 mt-2 md:mt-6 relative z-50 w-full max-w-md mx-auto px-2 md:px-0"
+      class="shrink-0 mt-2 md:mt-12 relative z-50 w-full max-w-md mx-auto px-2 md:px-0"
       style="padding-bottom: var(--safe-area-bottom, 0px);"
     >
       <slot name="action-panel"></slot>

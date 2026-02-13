@@ -29,7 +29,9 @@ export type SystemRecordType =
   | "winner" // 赢家公布
   | "hand-end" // 一局结束
   | "tip" // 打赏
-  | "chips-added"; // 增发筹码
+  | "chips-added" // 增发筹码
+  | "extension" // 延长思考时间
+  | "timeout"; // 超时弃牌
 
 // Action history record type
 export interface ActionRecord {

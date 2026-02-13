@@ -106,6 +106,10 @@ export interface GameState {
     phase: GamePhase; // 动作发生时的阶段
   };
   winners?: WinnerInfo[];
+  // 回合计时相关
+  turnStartTime?: number; // 当前回合开始时间戳
+  turnTimeLimit?: number; // 当前回合时间限制（秒），默认30
+  hasUsedExtension?: boolean; // 当前玩家是否已使用延时
 }
 
 // Winner information
@@ -148,6 +152,7 @@ export type MessageType =
   | "room-state"
   | "tip-player"
   | "add-chips"
+  | "request-extension" // 请求延时
   | "error"
   | "ping"
   | "pong";
@@ -205,4 +210,9 @@ export interface TipPayload {
 // Add chips payload
 export interface AddChipsPayload {
   amount: number;
+}
+
+// Request extension payload
+export interface RequestExtensionPayload {
+  playerId: string;
 }

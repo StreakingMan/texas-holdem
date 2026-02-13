@@ -3,7 +3,7 @@ import { computed, ref, watch, onUnmounted } from 'vue'
 import type { Player, PlayerAction, Card as CardType, GamePhase } from '@/core/types'
 import Card from './Card.vue'
 import ChipStack from './ChipStack.vue'
-import { Crown, Timer, Wifi, WifiOff, Gift, Check, Droplet, Link } from 'lucide-vue-next'
+import { Crown, Wifi, WifiOff, Gift, Check, Droplet, Link, Clock } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
 import { analyzeHand, analyzeStartingHand } from '@/core/hand-odds'
 
@@ -31,11 +31,16 @@ const props = defineProps<{
   communityCards?: CardType[]
   phase?: GamePhase
   tipEffect?: TipEffectInfo | null
+  // 回合计时相关
+  turnStartTime?: number
+  turnTimeLimit?: number
+  hasUsedExtension?: boolean
 }>()
 
 const emit = defineEmits<{
   tip: [playerId: string, amount: number]
   openHandRankings: []
+  requestExtension: []
 }>()
 
 // Bubble visibility state
@@ -107,6 +112,70 @@ watch(
   }
 )
 
+// 回合倒计时
+const remainingTime = ref(0)
+let countdownInterval: ReturnType<typeof setInterval> | null = null
+
+// 计算剩余时间
+function updateRemainingTime() {
+  if (props.player?.isTurn && props.turnStartTime && props.turnTimeLimit) {
+    const elapsed = Math.floor((Date.now() - props.turnStartTime) / 1000)
+    remainingTime.value = Math.max(0, props.turnTimeLimit - elapsed)
+  } else {
+    remainingTime.value = 0
+  }
+}
+
+// 倒计时进度百分比 (0-100)
+const timerProgress = computed(() => {
+  if (!props.turnTimeLimit || props.turnTimeLimit === 0) return 100
+  return Math.max(0, Math.min(100, (remainingTime.value / props.turnTimeLimit) * 100))
+})
+
+// 是否显示警告状态（小于10秒）
+const isTimerWarning = computed(() => remainingTime.value > 0 && remainingTime.value <= 10)
+
+// 是否显示倒计时
+const showTimer = computed(() => props.player?.isTurn && !props.player?.isAllIn && props.turnStartTime)
+
+// 延时费用
+const EXTENSION_COST = 10
+
+// 是否可以请求延时（仅本地玩家、轮到自己、有足够筹码、未使用过延时）
+const canRequestExtension = computed(() => {
+  return (
+    props.isLocal &&
+    props.player?.isTurn &&
+    !props.hasUsedExtension &&
+    (props.localPlayerChips ?? 0) >= EXTENSION_COST
+  )
+})
+
+function handleExtensionClick() {
+  emit('requestExtension')
+}
+
+// 监听 isTurn 变化，启动/停止倒计时
+watch(
+  () => [props.player?.isTurn, props.turnStartTime, props.turnTimeLimit],
+  () => {
+    if (props.player?.isTurn && props.turnStartTime) {
+      // 启动倒计时
+      updateRemainingTime()
+      if (countdownInterval) clearInterval(countdownInterval)
+      countdownInterval = setInterval(updateRemainingTime, 1000)
+    } else {
+      // 停止倒计时
+      if (countdownInterval) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+      }
+      remainingTime.value = 0
+    }
+  },
+  { immediate: true }
+)
+
 // Cleanup timer on unmount
 onUnmounted(() => {
   if (bubbleTimer) {
@@ -114,6 +183,9 @@ onUnmounted(() => {
   }
   if (actionEffectTimer) {
     clearTimeout(actionEffectTimer)
+  }
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
   }
 })
 
@@ -459,11 +531,57 @@ function getTierColor(tier: string): string {
 
       <!-- Turn timer indicator (absolutely positioned below player card) -->
       <div 
-        v-if="player.isTurn && !player.isAllIn"
-        class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex items-center justify-center gap-1 bg-amber-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-lg shadow-amber-500/30 z-10"
+        v-if="showTimer"
+        class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex items-center gap-1 z-10"
       >
-        <Timer class="w-3 h-3" />
-        <span>{{ isLocal ? '轮到你' : '思考中...' }}</span>
+        <!-- 倒计时显示 -->
+        <div 
+          class="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-lg transition-colors duration-300"
+          :class="isTimerWarning 
+            ? 'bg-red-500 text-white shadow-red-500/50 animate-pulse' 
+            : 'bg-amber-400 text-gray-900 shadow-amber-500/30'"
+        >
+          <!-- 圆形进度指示器 -->
+          <div class="relative w-4 h-4">
+            <svg class="w-4 h-4 -rotate-90" viewBox="0 0 20 20">
+              <!-- 背景圆 -->
+              <circle
+                cx="10" cy="10" r="8"
+                fill="none"
+                :stroke="isTimerWarning ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'"
+                stroke-width="3"
+              />
+              <!-- 进度圆 -->
+              <circle
+                cx="10" cy="10" r="8"
+                fill="none"
+                :stroke="isTimerWarning ? '#fff' : '#1f2937'"
+                stroke-width="3"
+                stroke-linecap="round"
+                :stroke-dasharray="50.27"
+                :stroke-dashoffset="50.27 * (1 - timerProgress / 100)"
+                class="transition-all duration-1000 ease-linear"
+              />
+            </svg>
+            <Clock class="absolute inset-0 w-2.5 h-2.5 m-auto" :class="isTimerWarning ? 'text-white' : 'text-gray-900'" />
+          </div>
+          <!-- 倒计时文字 -->
+          <span>
+            {{ isLocal ? '轮到你' : '思考中' }}
+            <span class="tabular-nums">{{ remainingTime }}s</span>
+          </span>
+        </div>
+        
+        <!-- 延时按钮 -->
+        <button
+          v-if="canRequestExtension"
+          @click.stop="handleExtensionClick"
+          class="flex items-center gap-0.5 px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-medium rounded-full shadow-lg transition-all hover:scale-105 active:scale-95"
+          title="支付 $10 延长 30 秒"
+        >
+          <span>+30s</span>
+          <span class="text-emerald-200">$10</span>
+        </button>
       </div>
 
       <!-- Current bet (absolutely positioned to avoid affecting layout) -->

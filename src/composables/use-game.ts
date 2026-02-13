@@ -8,6 +8,7 @@ import type {
   P2PMessage,
   PlayerJoinPayload,
   PlayerActionPayload,
+  RequestExtensionPayload,
 } from "@/core/types";
 
 export interface UseGameOptions {
@@ -327,7 +328,48 @@ export function useGame(options: UseGameOptions) {
       case "tip-player":
         // Tip is handled in GameView.vue for broadcast coordination
         break;
+
+      case "request-extension":
+        if (isHost && engine.value) {
+          const payload = message.payload as RequestExtensionPayload;
+          requestExtension(payload.playerId);
+        }
+        break;
     }
+  }
+
+  /**
+   * Request time extension for current turn (host only)
+   */
+  function requestExtension(requestPlayerId: string): boolean {
+    if (!isHost || !engine.value) return false;
+
+    const success = engine.value.requestExtension(requestPlayerId);
+    if (success) {
+      gameState.value = engine.value.getState();
+      if (roomState.value) {
+        roomState.value.gameState = gameState.value;
+      }
+    }
+
+    return success;
+  }
+
+  /**
+   * Handle turn timeout - auto fold (host only)
+   */
+  function handleTurnTimeout(timeoutPlayerId: string): boolean {
+    if (!isHost || !engine.value) return false;
+
+    const success = engine.value.handleTurnTimeout(timeoutPlayerId);
+    if (success) {
+      gameState.value = engine.value.getState();
+      if (roomState.value) {
+        roomState.value.gameState = gameState.value;
+      }
+    }
+
+    return success;
   }
 
   /**
@@ -465,5 +507,7 @@ export function useGame(options: UseGameOptions) {
     findAvailableSeat,
     tipPlayer,
     addChipsToAll,
+    requestExtension,
+    handleTurnTimeout,
   };
 }

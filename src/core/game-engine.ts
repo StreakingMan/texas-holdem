@@ -589,7 +589,67 @@ export class GameEngine {
     const currentPlayer = this.state.players[this.state.currentPlayerIndex];
     if (currentPlayer && !currentPlayer.folded && !currentPlayer.isAllIn) {
       currentPlayer.isTurn = true;
+      // 设置回合计时
+      this.state.turnStartTime = Date.now();
+      this.state.turnTimeLimit = this.settings.turnTimeLimit;
+      this.state.hasUsedExtension = false;
     }
+  }
+
+  /**
+   * 延时功能费用
+   */
+  static readonly EXTENSION_COST = 10;
+
+  /**
+   * 请求延长回合时间
+   * @param playerId - 请求延时的玩家ID
+   * @returns true 如果成功延时，false 如果不能延时
+   */
+  requestExtension(playerId: string): boolean {
+    const currentPlayer = this.state.players[this.state.currentPlayerIndex];
+    
+    // 验证是否轮到该玩家
+    if (!currentPlayer || currentPlayer.id !== playerId) {
+      return false;
+    }
+    
+    // 验证是否已经使用过延时
+    if (this.state.hasUsedExtension) {
+      return false;
+    }
+    
+    // 验证玩家是否有足够的筹码支付延时费用
+    if (currentPlayer.chips < GameEngine.EXTENSION_COST) {
+      return false;
+    }
+    
+    // 扣除延时费用并加入底池
+    currentPlayer.chips -= GameEngine.EXTENSION_COST;
+    this.state.pots[0]!.amount += GameEngine.EXTENSION_COST;
+    
+    // 延长30秒
+    this.state.turnTimeLimit = (this.state.turnTimeLimit || 30) + 30;
+    this.state.hasUsedExtension = true;
+    
+    return true;
+  }
+
+  /**
+   * 处理回合超时
+   * @param playerId - 超时玩家的ID
+   * @returns true 如果成功处理超时（执行弃牌）
+   */
+  handleTurnTimeout(playerId: string): boolean {
+    const currentPlayer = this.state.players[this.state.currentPlayerIndex];
+    
+    // 验证是否轮到该玩家
+    if (!currentPlayer || currentPlayer.id !== playerId || !currentPlayer.isTurn) {
+      return false;
+    }
+    
+    // 执行弃牌
+    return this.processAction(playerId, "fold");
   }
 
   private advanceToNextPlayer(): void {

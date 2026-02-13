@@ -20,6 +20,7 @@ import type {
   Card,
   GamePhase,
   TipPayload,
+  RequestExtensionPayload,
 } from "@/core/types";
 import {
   Copy,
@@ -385,6 +386,29 @@ onMounted(() => {
     // Game will be updated via game-state message
   });
 
+  // Handle extension request
+  peer.onMessage("request-extension", (message, senderId) => {
+    if (isHost) {
+      const payload = message.payload as RequestExtensionPayload;
+      const player = game.gameState.value?.players.find(p => p.id === payload.playerId);
+      const success = game.requestExtension(payload.playerId);
+      
+      if (success && player) {
+        // Add system record
+        gameStore.addSystemRecord(
+          "extension",
+          `⏱️ ${player.name} 支付 $10 延长思考时间 30 秒`
+        );
+        
+        // Broadcast updated state
+        peer.broadcast({
+          type: "game-state",
+          payload: game.gameState.value,
+        });
+      }
+    }
+  });
+
   // Handle tip message
   peer.onMessage("tip-player", (message) => {
     const tipPayload = message.payload as TipPayload;
@@ -457,6 +481,12 @@ onUnmounted(() => {
   peer.disconnect();
   gameStore.reset();
   playerStore.clearRoom();
+  
+  // Clear timeout timer
+  if (turnTimeoutTimer) {
+    clearTimeout(turnTimeoutTimer);
+    turnTimeoutTimer = null;
+  }
 });
 
 // Copy room ID
@@ -584,6 +614,112 @@ function sendTip(toPlayerId: string, amount: number): void {
     });
   }
 }
+
+// Request turn time extension
+function requestExtension(): void {
+  if (isHost) {
+    // Process directly
+    const success = game.requestExtension(playerStore.playerId);
+    if (success) {
+      // Add system record
+      gameStore.addSystemRecord(
+        "extension",
+        `⏱️ ${playerStore.playerName} 支付 $10 延长思考时间 30 秒`
+      );
+      
+      peer.broadcast({
+        type: "game-state",
+        payload: game.gameState.value,
+      });
+    }
+  } else {
+    // Send to host
+    const payload: RequestExtensionPayload = {
+      playerId: playerStore.playerId,
+    };
+    peer.sendToHost({
+      type: "request-extension",
+      payload,
+    });
+  }
+}
+
+// Turn timeout handling (host only)
+let turnTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+function startTurnTimeoutTimer() {
+  if (!isHost) return;
+  
+  // Clear existing timer
+  if (turnTimeoutTimer) {
+    clearTimeout(turnTimeoutTimer);
+    turnTimeoutTimer = null;
+  }
+  
+  const gameState = game.gameState.value;
+  if (!gameState?.turnStartTime || !gameState?.turnTimeLimit) return;
+  
+  const currentPlayer = gameStore.currentPlayer;
+  if (!currentPlayer) return;
+  
+  // Calculate remaining time
+  const elapsed = Math.floor((Date.now() - gameState.turnStartTime) / 1000);
+  const remaining = gameState.turnTimeLimit - elapsed;
+  
+  if (remaining <= 0) {
+    // Already timed out, handle immediately
+    handleTurnTimeout(currentPlayer.id);
+  } else {
+    // Set timer for remaining time
+    turnTimeoutTimer = setTimeout(() => {
+      const currentPlayerNow = gameStore.currentPlayer;
+      if (currentPlayerNow && currentPlayerNow.isTurn) {
+        handleTurnTimeout(currentPlayerNow.id);
+      }
+    }, remaining * 1000);
+  }
+}
+
+function handleTurnTimeout(playerId: string): void {
+  if (!isHost) return;
+  
+  const player = game.gameState.value?.players.find(p => p.id === playerId);
+  const success = game.handleTurnTimeout(playerId);
+  if (success && player) {
+    // Add system record
+    gameStore.addSystemRecord(
+      "timeout",
+      `⏰ ${player.name} 超时自动弃牌`
+    );
+    
+    // Broadcast updated state
+    peer.broadcast({
+      type: "game-state",
+      payload: game.gameState.value,
+    });
+  }
+}
+
+// Watch for turn changes to start/stop timeout timer (host only)
+watch(
+  () => gameStore.currentPlayer?.id,
+  () => {
+    if (isHost) {
+      startTurnTimeoutTimer();
+    }
+  },
+  { immediate: true }
+);
+
+// Watch for turnTimeLimit changes (extension used)
+watch(
+  () => game.gameState.value?.turnTimeLimit,
+  () => {
+    if (isHost) {
+      startTurnTimeoutTimer();
+    }
+  }
+);
 
 // Send chat message
 function sendChatMessage(content: string): void {
@@ -1098,8 +1234,12 @@ watch(
           :last-action="lastActionInfo"
           :is-host="isHost"
           :tip-effects="activeTipEffects"
+          :turn-start-time="gameStore.gameState?.turnStartTime"
+          :turn-time-limit="gameStore.gameState?.turnTimeLimit"
+          :has-used-extension="gameStore.gameState?.hasUsedExtension"
           @tip="sendTip"
           @open-hand-rankings="openHelpModal('hand-rankings')"
+          @request-extension="requestExtension"
         >
           <!-- Action panel in slot -->
           <template #action-panel>
