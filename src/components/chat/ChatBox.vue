@@ -220,7 +220,8 @@ function isOwnMessage(message: ChatMessage): boolean {
               :class="{
                 'left-0': index === 0,
                 'right-0': index === defaultVisibleCount - 1,
-                'left-1/2 -translate-x-1/2': index > 0 && index < defaultVisibleCount - 1
+                'left-1/2 -translate-x-1/2':
+                  index > 0 && index < defaultVisibleCount - 1,
               }"
             >
               {{ phrase.text }}
@@ -230,7 +231,8 @@ function isOwnMessage(message: ChatMessage): boolean {
                 :class="{
                   'left-3': index === 0,
                   'right-3': index === defaultVisibleCount - 1,
-                  'left-1/2 -translate-x-1/2': index > 0 && index < defaultVisibleCount - 1
+                  'left-1/2 -translate-x-1/2':
+                    index > 0 && index < defaultVisibleCount - 1,
                 }"
               ></span>
             </span>
@@ -240,7 +242,7 @@ function isOwnMessage(message: ChatMessage): boolean {
         <!-- More button -->
         <button
           @click="showAllPhrases = !showAllPhrases"
-          class="h-8 px-2 flex items-center gap-0.5 text-xs text-gray-400 hover:text-emerald-400 hover:bg-gray-700/50 rounded-lg transition-colors flex-shrink-0 ml-auto"
+          class="h-8 px-2 flex items-center gap-0.5 text-xs text-gray-400 hover:text-emerald-400 hover:bg-gray-700/50 rounded-lg transition-colors flex-shrink-0"
         >
           <component
             :is="showAllPhrases ? ChevronUp : ChevronDown"
@@ -276,7 +278,9 @@ function isOwnMessage(message: ChatMessage): boolean {
                 class="absolute bottom-full mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 border border-gray-600 shadow-lg left-1/2 -translate-x-1/2"
               >
                 {{ phrase.text }}
-                <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>
+                <span
+                  class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"
+                ></span>
               </span>
             </button>
           </template>
