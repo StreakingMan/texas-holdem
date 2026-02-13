@@ -3,24 +3,57 @@ import Peer from "peerjs";
 import type { DataConnection } from "peerjs";
 import type { P2PMessage, MessageType } from "@/core/types";
 
-// 国内可用的 ICE 服务器配置
-const ICE_SERVERS: RTCIceServer[] = [
-  // 国内 STUN 服务器
+// Metered TURN 服务 API Key
+// 获取方式：https://www.metered.ca/stun-turn
+const METERED_API_KEY = import.meta.env.VITE_METERED_API_KEY || "";
+const METERED_APP_NAME = import.meta.env.VITE_METERED_APP_NAME || "";
+
+// 默认 ICE 服务器（备用，当无法获取 Metered 凭据时使用）
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.qq.com:3478" },
   { urls: "stun:stun.miwifi.com:3478" },
-  // 备用国际 STUN（可能不稳定）
-  { urls: "stun:stun.syncthing.net:3478" },
   { urls: "stun:stun.cloudflare.com:3478" },
 ];
 
-// PeerJS 配置
-const PEER_CONFIG = {
-  debug: 2, // 增加调试级别便于排查
-  config: {
-    iceServers: ICE_SERVERS,
-    iceCandidatePoolSize: 10,
-  },
-};
+/**
+ * 从 Metered API 获取 TURN 服务器凭据
+ */
+async function fetchMeteredIceServers(): Promise<RTCIceServer[]> {
+  if (!METERED_API_KEY || !METERED_APP_NAME) {
+    console.log("[ICE] Metered 未配置，使用默认 STUN 服务器");
+    return DEFAULT_ICE_SERVERS;
+  }
+
+  try {
+    const response = await fetch(
+      `https://${METERED_APP_NAME}.metered.live/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const iceServers = await response.json();
+    console.log("[ICE] 成功获取 Metered TURN 凭据");
+    return iceServers;
+  } catch (err) {
+    console.warn("[ICE] 获取 Metered 凭据失败，使用默认服务器:", err);
+    return DEFAULT_ICE_SERVERS;
+  }
+}
+
+/**
+ * 创建 PeerJS 配置
+ */
+function createPeerConfig(iceServers: RTCIceServer[]) {
+  return {
+    debug: 2, // 增加调试级别便于排查
+    config: {
+      iceServers,
+      iceCandidatePoolSize: 10,
+    },
+  };
+}
 
 export interface PeerState {
   peerId: string | null;
@@ -48,12 +81,16 @@ export function usePeer() {
    * Initialize peer connection
    */
   async function initPeer(customId?: string): Promise<string> {
+    // 先获取 ICE 服务器配置
+    const iceServers = await fetchMeteredIceServers();
+    const peerConfig = createPeerConfig(iceServers);
+
     return new Promise((resolve, reject) => {
       try {
         // Create peer with optional custom ID and ICE config
         peer.value = customId
-          ? new Peer(customId, PEER_CONFIG)
-          : new Peer(PEER_CONFIG);
+          ? new Peer(customId, peerConfig)
+          : new Peer(peerConfig);
 
         peer.value.on("open", (id) => {
           peerId.value = id;
