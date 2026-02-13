@@ -387,6 +387,17 @@ export function usePeer() {
   const connectedPeers = computed(() => Array.from(connections.value.keys()));
 
   /**
+   * Close connection with a specific peer (host only, for kicking players)
+   */
+  function closeConnection(peerId: string): void {
+    const conn = connections.value.get(peerId);
+    if (conn) {
+      conn.close();
+      connections.value.delete(peerId);
+    }
+  }
+
+  /**
    * Disconnect and cleanup
    */
   function disconnect(): void {
@@ -429,6 +440,7 @@ export function usePeer() {
     broadcast,
     onMessage,
     offMessage,
+    closeConnection,
     disconnect,
   };
 }

@@ -41,6 +41,7 @@ const emit = defineEmits<{
   tip: [playerId: string, amount: number]
   openHandRankings: []
   requestExtension: []
+  kickPlayer: [playerId: string]
 }>()
 
 // Local player chips for tip validation
@@ -246,9 +247,11 @@ const flyingTips = computed(() => {
         :turn-start-time="player?.isTurn ? turnStartTime : undefined"
         :turn-time-limit="player?.isTurn ? turnTimeLimit : undefined"
         :has-used-extension="player?.isTurn ? hasUsedExtension : false"
+        :is-host="isHost"
         @tip="handleTip"
         @open-hand-rankings="emit('openHandRankings')"
         @request-extension="emit('requestExtension')"
+        @kick-player="(playerId) => emit('kickPlayer', playerId)"
       />
 
       <!-- Flying tip coins animation -->
@@ -347,9 +350,11 @@ const flyingTips = computed(() => {
         :turn-start-time="player?.isTurn ? turnStartTime : undefined"
         :turn-time-limit="player?.isTurn ? turnTimeLimit : undefined"
         :has-used-extension="player?.isTurn ? hasUsedExtension : false"
+        :is-host="isHost"
         @tip="handleTip"
         @open-hand-rankings="emit('openHandRankings')"
         @request-extension="emit('requestExtension')"
+        @kick-player="(playerId) => emit('kickPlayer', playerId)"
       />
 
       <!-- Flying tip coins animation -->

@@ -21,6 +21,7 @@ import type {
   GamePhase,
   TipPayload,
   RequestExtensionPayload,
+  KickPlayerPayload,
 } from "@/core/types";
 import {
   Copy,
@@ -251,6 +252,10 @@ onMounted(async () => {
 
 // Map senderId to player name for leave handling
 const senderPlayerNames = new Map<string, string>();
+// Map playerId to peer senderId for kick handling
+const playerIdToPeerId = new Map<string, string>();
+// Set of peer IDs that were kicked (to avoid duplicate leave messages)
+const kickedPeerIds = new Set<string>();
 
 // Setup message handlers
 onMounted(() => {
@@ -261,6 +266,8 @@ onMounted(() => {
       
       // Store sender -> player name mapping for leave handling
       senderPlayerNames.set(senderId, payload.player.name);
+      // Store player ID -> peer ID mapping for kick handling
+      playerIdToPeerId.set(payload.player.id, senderId);
       
       const isGameInProgress =
         game.gameState.value?.phase && game.gameState.value.phase !== "waiting";
@@ -295,9 +302,21 @@ onMounted(() => {
   // Handle player leave
   peer.onMessage("player-leave", (message, senderId) => {
     if (isHost) {
+      // Skip if this player was kicked (already handled)
+      if (kickedPeerIds.has(senderId)) {
+        kickedPeerIds.delete(senderId);
+        return;
+      }
+      
       // Get player name from mapping (set during player-join)
       const playerName = senderPlayerNames.get(senderId) || '玩家';
       senderPlayerNames.delete(senderId);
+      
+      // Also clean up playerIdToPeerId mapping
+      const payload = message.payload as { playerId?: string };
+      if (payload.playerId) {
+        playerIdToPeerId.delete(payload.playerId);
+      }
       
       // Add local system message
       chat.addSystemMessage(`${playerName} 离开了房间`);
@@ -323,8 +342,12 @@ onMounted(() => {
   // Handle player left notification (non-host)
   peer.onMessage("player-left", (message) => {
     if (!isHost) {
-      const { playerName } = message.payload as { playerName: string };
-      chat.addSystemMessage(`${playerName} 离开了房间`);
+      const { playerName, kicked } = message.payload as { playerName: string; kicked?: boolean };
+      if (kicked) {
+        chat.addSystemMessage(`${playerName} 已被踢出房间`);
+      } else {
+        chat.addSystemMessage(`${playerName} 离开了房间`);
+      }
     }
   });
 
@@ -387,7 +410,7 @@ onMounted(() => {
   });
 
   // Handle extension request
-  peer.onMessage("request-extension", (message, senderId) => {
+  peer.onMessage("request-extension", (message, _senderId) => {
     if (isHost) {
       const payload = message.payload as RequestExtensionPayload;
       const player = game.gameState.value?.players.find(p => p.id === payload.playerId);
@@ -472,6 +495,17 @@ onMounted(() => {
           }
         );
       }
+    }
+  });
+
+  // Handle kicked message (non-host players)
+  peer.onMessage("kicked", (message) => {
+    if (!isHost) {
+      const payload = message.payload as KickPlayerPayload;
+      // Show alert and redirect to home
+      alert(`你已被房主踢出房间${payload.reason ? `\n原因: ${payload.reason}` : ''}`);
+      peer.disconnect();
+      router.push('/');
     }
   });
 });
@@ -640,6 +674,69 @@ function requestExtension(): void {
     peer.sendToHost({
       type: "request-extension",
       payload,
+    });
+  }
+}
+
+// Kick a player from the room (host only)
+function kickPlayer(playerId: string): void {
+  if (!isHost) return;
+  
+  const player = game.gameState.value?.players.find(p => p.id === playerId);
+  if (!player) return;
+  
+  // Cannot kick yourself
+  if (playerId === playerStore.playerId) return;
+  
+  // Get the peer connection ID for this player
+  const peerId = playerIdToPeerId.get(playerId);
+  if (!peerId) {
+    console.error('[Kick] Cannot find peer ID for player:', playerId);
+    return;
+  }
+  
+  const playerName = player.name;
+  
+  // Mark this peer as kicked to avoid duplicate leave message
+  kickedPeerIds.add(peerId);
+  
+  // Send kicked notification to the player
+  const kickPayload: KickPlayerPayload = {
+    playerId,
+    playerName,
+  };
+  
+  peer.sendTo(peerId, {
+    type: "kicked",
+    payload: kickPayload,
+  });
+  
+  // Remove player from game
+  game.removePlayer(playerId);
+  
+  // Close the connection after a short delay to ensure message is sent
+  setTimeout(() => {
+    peer.closeConnection(peerId);
+  }, 100);
+  
+  // Remove from mappings
+  senderPlayerNames.delete(peerId);
+  playerIdToPeerId.delete(playerId);
+  
+  // Add system message
+  chat.addSystemMessage(`${playerName} 已被踢出房间`);
+  
+  // Broadcast player left notification to all other players
+  peer.broadcast({
+    type: "player-left",
+    payload: { playerName, kicked: true },
+  });
+  
+  // Broadcast updated game state
+  if (game.gameState.value) {
+    peer.broadcast({
+      type: "game-state",
+      payload: game.gameState.value,
     });
   }
 }
@@ -1240,6 +1337,7 @@ watch(
           @tip="sendTip"
           @open-hand-rankings="openHelpModal('hand-rankings')"
           @request-extension="requestExtension"
+          @kick-player="kickPlayer"
         >
           <!-- Action panel in slot -->
           <template #action-panel>

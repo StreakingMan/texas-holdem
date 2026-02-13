@@ -3,7 +3,7 @@ import { computed, ref, watch, onUnmounted } from 'vue'
 import type { Player, PlayerAction, Card as CardType, GamePhase } from '@/core/types'
 import Card from './Card.vue'
 import ChipStack from './ChipStack.vue'
-import { Crown, Wifi, WifiOff, Gift, Check, Droplet, Link, Clock } from 'lucide-vue-next'
+import { Crown, Wifi, WifiOff, Gift, Check, Droplet, Link, Clock, UserMinus } from 'lucide-vue-next'
 import { getAvatarById } from '@/utils/avatars'
 import { analyzeHand, analyzeStartingHand } from '@/core/hand-odds'
 
@@ -35,12 +35,15 @@ const props = defineProps<{
   turnStartTime?: number
   turnTimeLimit?: number
   hasUsedExtension?: boolean
+  // 房主踢人相关
+  isHost?: boolean
 }>()
 
 const emit = defineEmits<{
   tip: [playerId: string, amount: number]
   openHandRankings: []
   requestExtension: []
+  kickPlayer: [playerId: string]
 }>()
 
 // Bubble visibility state
@@ -153,6 +156,12 @@ const canRequestExtension = computed(() => {
 
 function handleExtensionClick() {
   emit('requestExtension')
+}
+
+function handleKickClick() {
+  if (props.player && props.isHost && !props.isLocal) {
+    emit('kickPlayer', props.player.id)
+  }
 }
 
 // 监听 isTurn 变化，启动/停止倒计时
@@ -467,6 +476,16 @@ function getTierColor(tier: string): string {
           title="打赏 $10"
         >
           <Gift class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+        </button>
+
+        <!-- Kick button (for host only, on non-local players) -->
+        <button
+          v-if="isHost && !isLocal"
+          @click.stop="handleKickClick"
+          class="flex absolute -bottom-3 -left-3 w-5 h-5 sm:w-6 sm:h-6 bg-red-500 hover:bg-red-400 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
+          title="踢出房间"
+        >
+          <UserMinus class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
         </button>
 
         <!-- Player avatar and info -->

@@ -153,6 +153,8 @@ export type MessageType =
   | "tip-player"
   | "add-chips"
   | "request-extension" // 请求延时
+  | "kick-player" // 房主踢人
+  | "kicked" // 通知被踢玩家
   | "error"
   | "ping"
   | "pong";
@@ -215,4 +217,11 @@ export interface AddChipsPayload {
 // Request extension payload
 export interface RequestExtensionPayload {
   playerId: string;
+}
+
+// Kick player payload
+export interface KickPlayerPayload {
+  playerId: string;
+  playerName: string;
+  reason?: string;
 }
