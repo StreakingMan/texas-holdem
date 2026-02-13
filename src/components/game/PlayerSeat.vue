@@ -220,7 +220,7 @@ const displayCards = computed(() => {
 // Status indicator
 const statusClass = computed(() => {
   if (!props.player) return ''
-  if (props.player.folded) return 'opacity-50 grayscale'
+  if (props.player.folded) return 'opacity-40'
   return ''
 })
 
